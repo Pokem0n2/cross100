@@ -104,7 +104,7 @@ header{width:100%;display:flex;flex-direction:column;gap:8px;padding:10px 0}
 
 .stats{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:30px}
 .seed-row{text-align:center;font-size:11px;color:var(--txt-m);letter-spacing:.5px;margin-top:4px;font-family:'Courier New',Consolas,monospace}
-.seed-btns{display:flex;justify-content:center;gap:8px;margin-top:6px}
+.seed-btns{display:flex;justify-content:center;gap:8px;margin-top:6px;flex-wrap:wrap}
 .btn-sm{font-size:10px;padding:4px 10px;letter-spacing:.5px}
 .seed-input{width:100%;padding:10px 12px;border:1px solid var(--grid);border-radius:var(--crad);font-size:16px;font-family:'Courier New',Consolas,monospace;background:var(--bg1);color:var(--txt);text-align:center;letter-spacing:3px;margin:0 0 16px;outline:none;line-height:1.8;box-sizing:border-box}
 .seed-input:focus{border-color:var(--accent)}
@@ -220,6 +220,30 @@ footer{display:flex;gap:8px;padding:10px 0;justify-content:space-between;width:1
 [data-theme="pixel"] .help-card h3{font-weight:700;text-shadow:0 0 10px var(--accent)}
 .help-card p{margin-bottom:8px}
 .help-card .help-hint{text-align:center;font-size:12px;color:var(--txt-m);margin-top:12px}
+
+/* Solution display */
+#solWrap{position:relative;width:min(92vw,400px);aspect-ratio:1;border-radius:var(--rad);overflow:hidden;margin-bottom:55px;transform:translateY(-15px);background:var(--grid);display:none;flex-direction:column}
+#solWrap.active{display:flex}
+.sol-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--hdr);border-bottom:1px solid var(--grid)}
+.sol-header .sol-title{font-size:13px;font-weight:600;letter-spacing:1px;color:var(--accent)}
+.sol-header .sol-info{font-size:11px;color:var(--txt-m)}
+.sol-steps{flex:1;overflow-y:auto;padding:8px 0;scrollbar-width:thin;scrollbar-color:var(--accent) transparent}
+.sol-steps::-webkit-scrollbar{width:4px}
+.sol-steps::-webkit-scrollbar-track{background:transparent}
+.sol-steps::-webkit-scrollbar-thumb{background:var(--accent);border-radius:2px}
+.sol-step{padding:6px 14px;font-size:13px;font-family:'Courier New',Consolas,monospace;color:var(--txt);border-bottom:1px solid rgba(128,128,128,.1);display:flex;align-items:center;gap:8px;transition:background .15s}
+.sol-step:hover{background:var(--cell-empty)}
+.sol-step .step-num{color:var(--txt-m);min-width:52px;font-size:11px}
+.sol-step .step-pos{color:var(--accent);font-weight:600}
+.sol-step.is-last{background:var(--cell-empty);border-bottom:none;border-top:2px solid var(--accent);margin-top:4px}
+.sol-step.is-last .step-num{color:var(--accent)}
+.sol-step.is-last .step-pos{font-size:14px}
+.sol-back{font-family:var(--font);background:none;color:var(--accent);border:1px solid var(--accent);border-radius:var(--crad);padding:3px 10px;font-size:11px;cursor:pointer}
+.sol-back:active{transform:scale(.95)}
+.sol-loading{flex:1;display:flex;align-items:center;justify-content:center;color:var(--txt-m);font-size:14px}
+@keyframes solSpin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+.sol-spinner{width:24px;height:24px;border:3px solid var(--grid);border-top-color:var(--accent);border-radius:50%;animation:solSpin .8s linear infinite;margin-right:10px}
+.sol-error{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--txt-m);font-size:13px;gap:8px;padding:20px;text-align:center}
 </style>
 </head>
 <body>
@@ -241,12 +265,20 @@ footer{display:flex;gap:8px;padding:10px 0;justify-content:space-between;width:1
       <button class="btn btn-sm" id="bLoadSeed" data-i18n="loadSeed">Load Seed</button>
       <button class="btn btn-sm" id="bImport" data-i18n="importMatrix">Import Matrix</button>
       <button class="btn btn-sm" id="bCopySeed" data-i18n="copySeed">Copy Seed</button>
+      <button class="btn btn-sm" id="bSolve" style="background:#27ae60" data-i18n="solve">Solve</button>
     </div>
   </header>
   <main id="game">
     <div id="gwrap">
       <div id="grid"></div>
       <canvas id="cv"></canvas>
+    </div>
+    <div id="solWrap">
+      <div class="sol-header">
+        <div><span class="sol-title" data-i18n="solution">SOLUTION</span> <span class="sol-info" id="solInfo"></span></div>
+        <button class="sol-back" id="bSolBack" data-i18n="back">Back</button>
+      </div>
+      <div class="sol-steps" id="solSteps"></div>
     </div>
   </main>
   <footer>
@@ -284,8 +316,8 @@ footer{display:flex;gap:8px;padding:10px 0;justify-content:space-between;width:1
   </div>
 </div>
 
+<script src="solver.js"></script>
 <script>
-(function(){
 'use strict';
 
 /* ═══ constants ═══ */
@@ -325,7 +357,8 @@ const T={
     failCleared:'Cleared {n} gray',retry:'RETRY',
     stuckTitle:'FAILED',stuckMsg:'Remaining {n} blocks < 19',stuckSub:'Cannot win this round',
     restart:'RESTART',showSolution:'Show Solution',switchTheme:'Switch Theme',
-    undo:'Undo',help:'Help'
+    undo:'Undo',help:'Help',solve:'Solve',solution:'SOLUTION',back:'Back',
+    solSteps:'{n} steps',solError:'No solution found for this grid.',solSolving:'Solving...'
   },
   cn:{
     taps:'点击',left:'剩余',seed:'种子',loadSeed:'加载种子',importMatrix:'导入网格',
@@ -345,7 +378,8 @@ const T={
     failCleared:'消除了 {n} 个灰色',retry:'重试',
     stuckTitle:'失败',stuckMsg:'剩余 {n} 个方块 < 19',stuckSub:'本局无法获胜',
     restart:'重新开始',showSolution:'演示解法',switchTheme:'切换主题',
-    undo:'撤销',help:'帮助'
+    undo:'撤销',help:'帮助',solve:'求解',solution:'解法',back:'返回',
+    solSteps:'{n} 步',solError:'未找到该棋盘的解法。',solSolving:'求解中...'
   }
 };
 function t(key,n){let s=T[lang][key]||T.en[key]||key;if(n!=null)s=s.replace('{n}',n);return s}
@@ -643,6 +677,7 @@ function newGame(){
   const r=gen(curSeed);grid=r.grid;sol=r.sol;taps=0;initGrid=grid.map(row=>[...row]);undoStack=[];
   showSeed();
   try{var sb=document.getElementById('stuckBanner');if(sb)sb.remove();}catch(e){}
+  hideSol();
   $('bu').classList.add('disabled');$ov.classList.add('hide');popSc();render();
 }
 function restartLevel(){
@@ -652,7 +687,7 @@ function restartLevel(){
   if(initGrid){grid=initGrid.map(row=>[...row]);}
   taps=0;undoStack=[];$('bu').classList.add('disabled');
   try{var sb=document.getElementById('stuckBanner');if(sb)sb.remove();}catch(e){}
-  $ov.classList.add('hide');popSc();render();
+  hideSol();$ov.classList.add('hide');popSc();render();
 }
 function undo(){
   if(busy||!undoStack.length)return;
@@ -803,6 +838,40 @@ function tickParts(){
   requestAnimationFrame(tickParts);
 }
 
+/* ═══ solver UI ═══ */
+function showSolUI(result){
+  const $sw=$('solWrap'),$ss=$('solSteps'),$si=$('solInfo');
+  $si.textContent=t('solSteps',result.totalSteps)+' \u00B7 Cross: R'+(result.crossRow+1)+' C'+(result.crossCol+1);
+  $ss.innerHTML='';
+  result.steps.forEach(function(step,idx){
+    const isLast=idx===result.steps.length-1;
+    const div=document.createElement('div');
+    div.className='sol-step'+(isLast?' is-last':'');
+    div.innerHTML='<span class="step-num">'+(isLast?'★ ':'Step '+(idx+1))+'</span><span class="step-pos">R '+(step.r+1)+' C '+(step.c+1)+'</span>';
+    $ss.appendChild(div);
+  });
+  $('gwrap').style.display='none';
+  $sw.classList.add('active');
+  $ss.scrollTop=0;
+}
+function hideSol(){
+  $('gwrap').style.display='';
+  $('solWrap').classList.remove('active');
+}
+function runSolver(){
+  if(!grid||!grid.length)return;
+  const $sw=$('solWrap'),$ss=$('solSteps'),$si=$('solInfo');
+  $('gwrap').style.display='none';
+  $sw.classList.add('active');
+  $si.textContent=t('solSolving');
+  $ss.innerHTML='<div class="sol-loading"><div class="sol-spinner"></div>'+t('solSolving')+'</div>';
+  setTimeout(function(){
+    const result=CROSSSolver.solve(grid);
+    if(!result){$ss.innerHTML='<div class="sol-error">✗<br>'+t('solError')+'</div>';return}
+    showSolUI(result);
+  },50);
+}
+
 /* ═══ watchdog ═══ */
 setInterval(function(){
   var rem=0;
@@ -874,6 +943,8 @@ function init(){
   });
   $('importOv').addEventListener('click',e=>{if(e.target===$('importOv'))$('importOv').classList.add('hide');});
   $('importConfirm').addEventListener('click',importGrid);
+  $('bSolve').addEventListener('click',runSolver);
+  $('bSolBack').addEventListener('click',hideSol);
   $('bx').addEventListener('click',()=>{
     const action=$('bx').dataset.action;
     if(action==='retry')restartLevel();else newGame();

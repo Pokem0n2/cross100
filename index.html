@@ -533,9 +533,111 @@ function showStuck(){
   if(ov)ov.classList.remove('hide');
 }
 
+/* ═══ universal solver ═══ */
+function solveGrid(g){
+  const n=N;
+  /* build equations: x[i]+y[j] = g[i][j]+1 for each cell with g[i][j]>=0 */
+  const vars=n*2;
+  const A=[],b=[];
+  for(let i=0;i<n;i++)for(let j=0;j<n;j++){
+    if(g[i][j]<0)continue;
+    const row=new Array(vars).fill(0);
+    row[i]=1;row[n+j]=1;
+    A.push(row);b.push(g[i][j]+1);
+  }
+  /* Gaussian elimination */
+  const m=A.length;
+  const aug=A.map((row,i)=>[...row,b[i]]);
+  const pivCol=new Array(vars).fill(-1);
+  let r=0;
+  for(let c=0;c<vars&&r<m;c++){
+    let piv=-1;
+    for(let i=r;i<m;i++)if(Math.abs(aug[i][c])>1e-9){piv=i;break}
+    if(piv<0)continue;
+    [aug[r],aug[piv]]=[aug[piv],aug[r]];
+    pivCol[c]=r;
+    const div=aug[r][c];
+    for(let j=0;j<=vars;j++)aug[r][j]/=div;
+    for(let i=0;i<m;i++){
+      if(i===r)continue;
+      const f=aug[i][c];
+      if(Math.abs(f)<1e-9)continue;
+      for(let j=0;j<=vars;j++)aug[i][j]-=f*aug[r][j];
+    }
+    r++;
+  }
+  /* check consistency */
+  for(let i=r;i<m;i++)if(Math.abs(aug[i][vars])>1e-9)return null;
+  /* extract solution (free vars=0) */
+  const sol=new Array(vars).fill(0);
+  for(let c=0;c<vars;c++){
+    const pr=pivCol[c];
+    if(pr<0)continue;
+    sol[c]=aug[pr][vars];
+  }
+  /* verify non-negative and equations */
+  for(let v of sol)if(v<-1e-9)return null;
+  for(let i=0;i<m;i++){
+    let s=0;for(let c=0;c<vars;c++)s+=A[i][c]*sol[c];
+    if(Math.abs(s-b[i])>1e-9)return null;
+  }
+  const rc=sol.slice(0,n).map(v=>Math.round(v));
+  const cc=sol.slice(n).map(v=>Math.round(v));
+  return{rowTaps:rc,colTaps:cc};
+}
+function findTapOrder(g,rowTaps,colTaps){
+  const n=N;
+  const taps=[];
+  for(let i=0;i<n;i++)for(let j=0;j<n;j++){
+    const cnt=rowTaps[i]+colTaps[j];
+    if(cnt>0)taps.push({r:i,c:j,cnt});
+  }
+  /* sort by initial value descending — high-value cells tapped first */
+  taps.sort((a,b)=>g[b.r][b.c]-g[a.r][a.c]);
+  const sequence=[];
+  const rCnt=new Array(n).fill(0);
+  const cCnt=new Array(n).fill(0);
+  const used=new Set();
+  while(sequence.length<taps.length){
+    let found=false;
+    for(const t of taps){
+      const key=t.r*n+t.c;
+      if(used.has(key))continue;
+      if(rCnt[t.r]+cCnt[t.c]>=t.cnt)continue;
+      /* check cell still valid */
+      const cur=g[t.r][t.c]-rCnt[t.r]-cCnt[t.c];
+      if(cur<0)continue;
+      /* check all cells in row/col won't go below 0 */
+      let ok=true;
+      for(let k=0;k<n;k++){
+        if(g[t.r][k]>=0 && g[t.r][k]-rCnt[t.r]-cCnt[k]<0){ok=false;break}
+        if(g[k][t.c]>=0 && g[k][t.c]-rCnt[k]-cCnt[t.c]<0){ok=false;break}
+      }
+      if(!ok)continue;
+      sequence.push({r:t.r,c:t.c});
+      rCnt[t.r]++;cCnt[t.c]++;
+      used.add(key);
+      found=true;
+      break;
+    }
+    if(!found)return null;
+  }
+  return sequence;
+}
+function universalSolver(g){
+  const result=solveGrid(g);
+  if(!result)return null;
+  return findTapOrder(g,result.rowTaps,result.colTaps);
+}
+
 /* ═══ crack ═══ */
 function crack(){
-  if(busy||!sol.length||tapped)return;
+  if(busy||(!sol.length&&!grid)||tapped)return;
+  /* if no precomputed solution, run universal solver */
+  if(!sol.length){
+    sol=universalSolver(grid);
+    if(!sol){alert('No solution found for this grid.');return}
+  }
   const savedGrid=grid.map(row=>[...row]);
   const savedTaps=taps;
   const bcBtn=$('bc');

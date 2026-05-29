@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh" data-theme="valley">
+<html lang="en" data-theme="valley">
 <head>
 <meta charset="UTF-8">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -73,6 +73,7 @@ body{
 
 /* Layout */
 #app{
+  position:relative;
   width:100%;max-width:440px;height:100vh;height:100dvh;
   display:flex;flex-direction:column;align-items:center;
   padding:env(safe-area-inset-top) 12px 12px;
@@ -97,8 +98,18 @@ header{width:100%;display:flex;flex-direction:column;gap:8px;padding:10px 0}
 [data-theme="pixel"] .btn-icon{background:rgba(30,30,80,.85)}
 [data-theme="pixel"] .btn{background:#c0392b}
 .btn-icon.disabled{opacity:.35;cursor:default;pointer-events:none}
+.lang-btn{font-family:var(--font);font-size:11px;font-weight:700;letter-spacing:0;padding:4px 8px;
+  background:transparent;color:var(--txt);border:1px solid var(--grid);border-radius:var(--crad);cursor:pointer;line-height:1}
+[data-theme="pixel"] .lang-btn{border-color:rgba(255,255,255,.15)}
 
-.stats{display:flex;justify-content:center;gap:8px;flex-wrap:wrap}
+.stats{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:30px}
+.seed-row{text-align:center;font-size:11px;color:var(--txt-m);letter-spacing:.5px;margin-top:4px;font-family:'Courier New',Consolas,monospace}
+.seed-btns{display:flex;justify-content:center;gap:8px;margin-top:6px}
+.btn-sm{font-size:10px;padding:4px 10px;letter-spacing:.5px}
+.seed-input{width:100%;padding:10px 12px;border:1px solid var(--grid);border-radius:var(--crad);font-size:16px;font-family:'Courier New',Consolas,monospace;background:var(--bg1);color:var(--txt);text-align:center;letter-spacing:3px;margin:0 0 16px;outline:none;line-height:1.8;box-sizing:border-box}
+.seed-input:focus{border-color:var(--accent)}
+.grid-textarea{width:100%;padding:8px;border:1px solid var(--grid);border-radius:var(--crad);font-size:11px;font-family:'Courier New',Consolas,monospace;background:var(--bg1);color:var(--txt);resize:none;outline:none;line-height:1.5;box-sizing:border-box;letter-spacing:0}
+.grid-textarea:focus{border-color:var(--accent)}
 .stat{
   background:var(--cell-empty);border:1px solid var(--grid);
   border-radius:var(--crad);padding:5px 12px;
@@ -115,6 +126,8 @@ header{width:100%;display:flex;flex-direction:column;gap:8px;padding:10px 0}
 #gwrap{
   position:relative;width:min(92vw,400px);aspect-ratio:1;
   border-radius:var(--rad);overflow:hidden;
+  margin-bottom:55px;
+  transform:translateY(-15px);
 }
 #grid{
   width:100%;height:100%;
@@ -183,6 +196,9 @@ header{width:100%;display:flex;flex-direction:column;gap:8px;padding:10px 0}
 
 /* Footer */
 footer{display:flex;gap:8px;padding:10px 0;justify-content:space-between;width:100%}
+.undo-btn{position:absolute;left:50%;transform:translateX(-50%);bottom:102px;background:none;border:none;padding:4px;cursor:pointer;color:var(--txt);opacity:.5;transition:opacity .2s;z-index:5}
+.undo-btn:hover,.undo-btn:active{opacity:.8}
+.undo-btn.disabled{opacity:.15;cursor:default;pointer-events:none}
 
 /* Help overlay */
 .help-overlay{
@@ -190,7 +206,9 @@ footer{display:flex;gap:8px;padding:10px 0;justify-content:space-between;width:1
   background:rgba(0,0,0,.55);
   display:flex;align-items:center;justify-content:center;
   backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  transition:opacity .4s;
 }
+.help-overlay.hide{opacity:0;pointer-events:none}
 .help-card{
   background:var(--hdr);border:1px solid var(--grid);
   border-radius:var(--rad);padding:28px 32px;
@@ -210,12 +228,19 @@ footer{display:flex;gap:8px;padding:10px 0;justify-content:space-between;width:1
     <div class="hdr-top">
       <span class="logo">CROSS</span>
       <div class="hdr-btns">
-        <button class="btn-icon" id="bh" title="帮助">?</button>
+        <button class="lang-btn" id="blang">EN</button>
+        <button class="btn-icon" id="bh" title="Help">?</button>
       </div>
     </div>
     <div class="stats">
-      <div class="stat"><span class="stat-l">Taps</span><span class="stat-v" id="sc">0</span></div>
-      <div class="stat"><span class="stat-l">Left</span><span class="stat-v" id="rm">100</span></div>
+      <div class="stat"><span class="stat-l" data-i18n="taps">Taps</span><span class="stat-v" id="sc">0</span></div>
+      <div class="stat"><span class="stat-l" data-i18n="left">Left</span><span class="stat-v" id="rm">100</span></div>
+    </div>
+    <div class="seed-row" id="seedRow"><span data-i18n="seed">seed</span>：<span id="seedVal">—</span></div>
+    <div class="seed-btns">
+      <button class="btn btn-sm" id="bLoadSeed" data-i18n="loadSeed">Load Seed</button>
+      <button class="btn btn-sm" id="bImport" data-i18n="importMatrix">Import Matrix</button>
+      <button class="btn btn-sm" id="bCopySeed" data-i18n="copySeed">Copy Seed</button>
     </div>
   </header>
   <main id="game">
@@ -225,17 +250,36 @@ footer{display:flex;gap:8px;padding:10px 0;justify-content:space-between;width:1
     </div>
   </main>
   <footer>
-    <button class="btn-icon" id="bt" title="切换主题"><svg width="16" height="16" viewBox="0 0 16 16"><polygon points="8,1 15,8 8,15 1,8" fill="currentColor" stroke="none"/></svg></button>
-    <button class="btn" id="bn2">NEW GAME</button>
-    <button class="btn-icon disabled" id="bc" title="演示解法"><svg width="16" height="16" viewBox="0 0 16 16"><polygon points="3,0 16,8 3,16" fill="currentColor" stroke="none"/></svg></button>
+    <button class="btn-icon" id="bt" title="Switch Theme"><svg width="16" height="16" viewBox="0 0 16 16"><polygon points="8,1 15,8 8,15,1,8" fill="currentColor" stroke="none"/></svg></button>
+    <button class="btn" id="bn2" data-i18n="newGame">NEW GAME</button>
+    <button class="btn-icon disabled" id="bc" title="Show Solution"><svg width="16" height="16" viewBox="0 0 16 16"><polygon points="3,0 16,8 3,16" fill="currentColor" stroke="none"/></svg></button>
   </footer>
+  <button class="undo-btn disabled" id="bu" title="Undo"><svg width="20" height="20" viewBox="0 0 16 16"><path d="M3 8h7a3 3 0 0 1 0 6H9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 5L3 8l3 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
   <div class="ov hide" id="ov">
     <div class="ov-card">
       <div class="ov-icon" id="oi">✦</div>
       <h2 class="ov-title" id="ot">CLEARED!</h2>
-      <p class="ov-score">Taps: <strong id="fs">0</strong></p>
+      <p class="ov-score"><span data-i18n="taps">Taps</span>: <strong id="fs">0</strong></p>
       <p class="ov-msg" id="om"></p>
-      <button class="btn btn-pri" id="bx">NEW GAME</button>
+      <button class="btn btn-pri" id="bx" data-i18n="newGame">NEW GAME</button>
+    </div>
+  </div>
+  <div class="help-overlay hide" id="seedOv" style="align-items:flex-start;padding-top:15vh">
+    <div class="help-card">
+      <h3 data-i18n="loadSeedTitle">LOAD SEED</h3>
+      <p style="margin-bottom:12px;color:var(--txt-m);font-size:12px;text-align:center" data-i18n="loadSeedHint">Enter seed ID to load a level</p>
+      <input class="seed-input" id="seedIn" type="text" maxlength="8" placeholder="xxxxxxxx" autocomplete="off" spellcheck="false" inputmode="hex">
+      <div style="text-align:center"><button class="btn btn-pri" id="seedConfirm" data-i18n="confirm">Confirm</button></div>
+      <p class="help-hint" data-i18n="tapOutside">Tap outside to close</p>
+    </div>
+  </div>
+  <div class="help-overlay hide" id="importOv" style="align-items:flex-start;padding-top:8vh">
+    <div class="help-card">
+      <h3 data-i18n="importGridTitle">IMPORT GRID</h3>
+      <p style="margin-bottom:8px;color:var(--txt-m);font-size:12px;text-align:center" data-i18n="importGridHint">Paste 10×10 number matrix (comma or space separated, -1 for empty)</p>
+      <textarea class="grid-textarea" id="gridIn" rows="10" spellcheck="false" placeholder="3,3,2,7,6,2,3,2,5,2\n1,0,-1,4,3,-1,0,-1,4,-1\n..."></textarea>
+      <div style="text-align:center"><button class="btn btn-pri" id="importConfirm" data-i18n="confirm">Confirm</button></div>
+      <p class="help-hint" data-i18n="tapOutside">Tap outside to close</p>
     </div>
   </div>
 </div>
@@ -259,7 +303,61 @@ const COLORS=[
 ];
 
 /* ═══ state ═══ */
-let grid=[],taps=0,busy=false,theme='valley',lastGray=0,sol=[],cracking=false,crackStop=false,initGrid=null,tapped=false;
+let grid=[],taps=0,busy=false,theme='valley',lang='en',lastGray=0,sol=[],cracking=false,crackStop=false,initGrid=null,tapped=false,undoStack=[],curSeed=0;
+
+/* ═══ i18n ═══ */
+const T={
+  en:{
+    taps:'Taps',left:'Left',seed:'seed',loadSeed:'Load Seed',importMatrix:'Import Matrix',
+    copySeed:'Copy Seed',newGame:'NEW GAME',confirm:'Confirm',
+    helpTitle:'HOW TO PLAY',
+    helpGoal:'<b>Goal:</b> On your final tap, clear exactly <b>19</b> gray blocks to win.',
+    helpOp:'<b>How:</b> Tap any block — its entire <b>row + column</b> each drop one color level. Empty blocks are unaffected.',
+    helpColors:'<b>Colors:</b> Black → Purple → Blue → Cyan → Green → Yellow → Orange → Red → Gray → Empty',
+    helpScore:'<b>Score:</b> Fewer taps is better.',
+    helpClose:'Tap anywhere to close',
+    loadSeedTitle:'LOAD SEED',loadSeedHint:'Enter seed ID to load a level',
+    importGridTitle:'IMPORT GRID',importGridHint:'Paste 10×10 number matrix (comma or space separated, -1 for empty)',
+    tapOutside:'Tap outside to close',
+    copied:'Copied !',
+    winTitle:'CLEARED!',winMsg:'Cleared exactly 19 gray blocks!',
+    failTitle:'ALMOST!',failMsg:'Need to clear exactly 19 gray blocks in the final move',
+    failCleared:'Cleared {n} gray',retry:'RETRY',
+    stuckTitle:'FAILED',stuckMsg:'Remaining {n} blocks < 19',stuckSub:'Cannot win this round',
+    restart:'RESTART',showSolution:'Show Solution',switchTheme:'Switch Theme',
+    undo:'Undo',help:'Help'
+  },
+  cn:{
+    taps:'点击',left:'剩余',seed:'种子',loadSeed:'加载种子',importMatrix:'导入网格',
+    copySeed:'复制种子',newGame:'新游戏',confirm:'确认',
+    helpTitle:'游戏规则',
+    helpGoal:'<b>目标：</b>最后一次点击恰好消除 <b>19</b> 个灰色方块即可通关。',
+    helpOp:'<b>操作：</b>点击任意色块，该色块所在的 <b>整行 + 整列</b> 所有色块颜色各降一级。无色块不受影响。',
+    helpColors:'<b>颜色等级：</b>黑 → 紫 → 蓝 → 青 → 绿 → 黄 → 橙 → 红 → 灰 → 无色（消除）',
+    helpScore:'<b>得分：</b>点击次数越少越好。',
+    helpClose:'点击任意位置关闭',
+    loadSeedTitle:'加载种子',loadSeedHint:'输入种子ID加载指定关卡',
+    importGridTitle:'导入网格',importGridHint:'粘贴10×10数字矩阵（逗号或空格分隔，-1为空）',
+    tapOutside:'点击遮罩关闭',
+    copied:'已复制 !',
+    winTitle:'通关！',winMsg:'成功消除 19 个灰色方块！',
+    failTitle:'差一点！',failMsg:'最后一次点击需要恰好消除 19 个灰色方块',
+    failCleared:'消除了 {n} 个灰色',retry:'重试',
+    stuckTitle:'失败',stuckMsg:'剩余 {n} 个方块 < 19',stuckSub:'本局无法获胜',
+    restart:'重新开始',showSolution:'演示解法',switchTheme:'切换主题',
+    undo:'撤销',help:'帮助'
+  }
+};
+function t(key,n){let s=T[lang][key]||T.en[key]||key;if(n!=null)s=s.replace('{n}',n);return s}
+function applyLang(){
+  document.documentElement.lang=lang==='cn'?'zh':'en';
+  $('blang').textContent=lang==='cn'?'CN':'EN';
+  document.querySelectorAll('[data-i18n]').forEach(el=>{const k=el.dataset.i18n;if(T[lang][k])el.textContent=T[lang][k]});
+  $('bh').title=t('help');
+  $('bt').title=t('switchTheme');
+  $('bc').title=t('showSolution');
+  $('bu').title=t('undo');
+}
 const SVG_DIAMOND='<svg width="16" height="16" viewBox="0 0 16 16"><polygon points="8,1 15,8 8,15 1,8" fill="currentColor" stroke="none"/></svg>';
 const SVG_SQUARE='<svg width="14" height="14" viewBox="0 0 14 14"><rect x="1" y="1" width="12" height="12" fill="currentColor" stroke="none"/></svg>';
 const SVG_PLAY='<svg width="16" height="16" viewBox="0 0 16 16"><polygon points="3,0 16,8 3,16" fill="currentColor" stroke="none"/></svg>';
@@ -272,15 +370,20 @@ const $g=$('grid'),$sc=$('sc'),
 function $(id){return document.getElementById(id)}
 
 /* ═══ persistence ═══ */
-function load(){try{const d=JSON.parse(localStorage.getItem('cross')||'{}');theme=d.t||'valley'}catch(e){}}
-function save(){try{localStorage.setItem('cross',JSON.stringify({theme}))}catch(e){}}
+function load(){try{const d=JSON.parse(localStorage.getItem('cross')||'{}');theme=d.t||'valley';lang=d.l||'en'}catch(e){}}
+function save(){try{localStorage.setItem('cross',JSON.stringify({t:theme,l:lang}))}catch(e){}}
+
+/* ═══ seed / PRNG ═══ */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t^=t+Math.imul(t^t>>>7,61|t);return((t^t>>>14)>>>0)/4294967296}}
+function showSeed(){$('seedVal').textContent=curSeed.toString(16).padStart(8,'0')}
 
 /* ═══ level gen (stacking) ═══ */
-function gen(){
+function gen(seed){
+  const rng=seed!=null?mulberry32(seed):Math.random;
   const g=[],seq=[];
   for(let r=0;r<N;r++){g[r]=[];for(let c=0;c<N;c++)g[r][c]=-1}
   while(true){
-    const r=Math.floor(Math.random()*N),c=Math.floor(Math.random()*N);
+    const r=Math.floor(rng()*N),c=Math.floor(rng()*N);
     let exceed=false;
     for(let i=0;i<N;i++){if(g[r][i]>=8||g[i][c]>=8){exceed=true;break}}
     if(exceed)break;
@@ -320,6 +423,7 @@ function tap(r,c){
   if(!cracking&&busy)return;
   busy=true;
   if(!cracking){taps++;popSc();if(!tapped){tapped=true;$('bc').classList.add('disabled');}}
+  undoStack.push(grid.map(row=>[...row]));$('bu').classList.remove('disabled');
   emitSW(r,c);
 
   const aff=[];
@@ -330,19 +434,32 @@ function tap(r,c){
   const tapEl=$g.children[r*N+c];
   if(tapEl){tapEl.classList.add('tap');setTimeout(()=>tapEl.classList.remove('tap'),350)}
 
-  let mx=0;
+  /* ── grid update + gray count (sync) ── */
   const gone=[];
   const grayClr=[];
+  for(const cell of aff){
+    if(grid[cell.r][cell.c]===0)grayClr.push(1);
+    grid[cell.r][cell.c]--;
+    if(grid[cell.r][cell.c]<-1)grid[cell.r][cell.c]=-1;
+    if(grid[cell.r][cell.c]===-1)gone.push({r:cell.r,c:cell.c});
+  }
 
+  /* ── win/fail check (immediate, data already correct) ── */
+  if(!cracking){
+    const gc=grayClr.length;
+    lastGray=gc;
+    const res=chkGray(gc);
+    if(res==='win')setTimeout(showWin,450);
+    else if(res==='fail')setTimeout(showFail,450);
+  }
+
+  /* ── animations (visual only, no grid mutation) ── */
+  let mx=0;
   for(const cell of aff){
     mx=Math.max(mx,cell.d);
     setTimeout(()=>{
       const el=$g.children[cell.r*N+cell.c];
       if(el){el.classList.add('pop');setTimeout(()=>el.classList.remove('pop'),300)}
-      if(grid[cell.r][cell.c]===0)grayClr.push(1);
-      grid[cell.r][cell.c]--;
-      if(grid[cell.r][cell.c]<-1)grid[cell.r][cell.c]=-1;
-      if(grid[cell.r][cell.c]===-1)gone.push({r:cell.r,c:cell.c});
       upd(cell.r,cell.c);
     },cell.d);
   }
@@ -354,13 +471,6 @@ function tap(r,c){
       emit(g.r,g.c);
     }
     if(theme==='pixel'&&aff.length>0){$g.classList.add('shake');setTimeout(()=>$g.classList.remove('shake'),120)}
-    if(!cracking){
-      const gc=grayClr.length;
-      lastGray=gc;
-      const res=chkGray(gc);
-      if(res==='win')setTimeout(showWin,450);
-      else if(res==='fail')setTimeout(showFail,450);
-    }
     busy=false;
   },mx+180);
 }
@@ -393,18 +503,18 @@ function updRem(){
 
 /* ═══ win/fail ═══ */
 function showWin(){
-  $('ot').textContent='CLEARED!';
+  $('ot').textContent=t('winTitle');
   $('oi').textContent='✦';
   $fs.textContent=taps;
-  $('om').textContent='Cleared exactly 19 gray blocks!';$bx.textContent='NEW GAME';
+  $('om').textContent=t('winMsg');$bx.textContent=t('newGame');
   $bx.dataset.action='next';
   $ov.classList.remove('hide');
 }
 function showFail(){
-  $('ot').textContent='ALMOST!';
+  $('ot').textContent=t('failTitle');
   $('oi').textContent='✗';
-  $fs.textContent='Cleared '+lastGray+' gray';
-  $('om').textContent='Need to clear exactly 19 gray blocks in the final move';$bx.textContent='RETRY';
+  $fs.textContent=t('failCleared',lastGray);
+  $('om').textContent=t('failMsg');$bx.textContent=t('retry');
   $bx.dataset.action='retry';
   $ov.classList.remove('hide');
 }
@@ -423,9 +533,111 @@ function showStuck(){
   if(ov)ov.classList.remove('hide');
 }
 
+/* ═══ universal solver ═══ */
+function solveGrid(g){
+  const n=N;
+  /* build equations: x[i]+y[j] = g[i][j]+1 for each cell with g[i][j]>=0 */
+  const vars=n*2;
+  const A=[],b=[];
+  for(let i=0;i<n;i++)for(let j=0;j<n;j++){
+    if(g[i][j]<0)continue;
+    const row=new Array(vars).fill(0);
+    row[i]=1;row[n+j]=1;
+    A.push(row);b.push(g[i][j]+1);
+  }
+  /* Gaussian elimination */
+  const m=A.length;
+  const aug=A.map((row,i)=>[...row,b[i]]);
+  const pivCol=new Array(vars).fill(-1);
+  let r=0;
+  for(let c=0;c<vars&&r<m;c++){
+    let piv=-1;
+    for(let i=r;i<m;i++)if(Math.abs(aug[i][c])>1e-9){piv=i;break}
+    if(piv<0)continue;
+    [aug[r],aug[piv]]=[aug[piv],aug[r]];
+    pivCol[c]=r;
+    const div=aug[r][c];
+    for(let j=0;j<=vars;j++)aug[r][j]/=div;
+    for(let i=0;i<m;i++){
+      if(i===r)continue;
+      const f=aug[i][c];
+      if(Math.abs(f)<1e-9)continue;
+      for(let j=0;j<=vars;j++)aug[i][j]-=f*aug[r][j];
+    }
+    r++;
+  }
+  /* check consistency */
+  for(let i=r;i<m;i++)if(Math.abs(aug[i][vars])>1e-9)return null;
+  /* extract solution (free vars=0) */
+  const sol=new Array(vars).fill(0);
+  for(let c=0;c<vars;c++){
+    const pr=pivCol[c];
+    if(pr<0)continue;
+    sol[c]=aug[pr][vars];
+  }
+  /* verify non-negative and equations */
+  for(let v of sol)if(v<-1e-9)return null;
+  for(let i=0;i<m;i++){
+    let s=0;for(let c=0;c<vars;c++)s+=A[i][c]*sol[c];
+    if(Math.abs(s-b[i])>1e-9)return null;
+  }
+  const rc=sol.slice(0,n).map(v=>Math.round(v));
+  const cc=sol.slice(n).map(v=>Math.round(v));
+  return{rowTaps:rc,colTaps:cc};
+}
+function findTapOrder(g,rowTaps,colTaps){
+  const n=N;
+  const taps=[];
+  for(let i=0;i<n;i++)for(let j=0;j<n;j++){
+    const cnt=rowTaps[i]+colTaps[j];
+    if(cnt>0)taps.push({r:i,c:j,cnt});
+  }
+  /* sort by initial value descending — high-value cells tapped first */
+  taps.sort((a,b)=>g[b.r][b.c]-g[a.r][a.c]);
+  const sequence=[];
+  const rCnt=new Array(n).fill(0);
+  const cCnt=new Array(n).fill(0);
+  const used=new Set();
+  while(sequence.length<taps.length){
+    let found=false;
+    for(const t of taps){
+      const key=t.r*n+t.c;
+      if(used.has(key))continue;
+      if(rCnt[t.r]+cCnt[t.c]>=t.cnt)continue;
+      /* check cell still valid */
+      const cur=g[t.r][t.c]-rCnt[t.r]-cCnt[t.c];
+      if(cur<0)continue;
+      /* check all cells in row/col won't go below 0 */
+      let ok=true;
+      for(let k=0;k<n;k++){
+        if(g[t.r][k]>=0 && g[t.r][k]-rCnt[t.r]-cCnt[k]<0){ok=false;break}
+        if(g[k][t.c]>=0 && g[k][t.c]-rCnt[k]-cCnt[t.c]<0){ok=false;break}
+      }
+      if(!ok)continue;
+      sequence.push({r:t.r,c:t.c});
+      rCnt[t.r]++;cCnt[t.c]++;
+      used.add(key);
+      found=true;
+      break;
+    }
+    if(!found)return null;
+  }
+  return sequence;
+}
+function universalSolver(g){
+  const result=solveGrid(g);
+  if(!result)return null;
+  return findTapOrder(g,result.rowTaps,result.colTaps);
+}
+
 /* ═══ crack ═══ */
 function crack(){
-  if(busy||!sol.length||tapped)return;
+  if(busy||(!sol.length&&!grid)||tapped)return;
+  /* if no precomputed solution, run universal solver */
+  if(!sol.length){
+    sol=universalSolver(grid);
+    if(!sol){alert('No solution found for this grid.');return}
+  }
   const savedGrid=grid.map(row=>[...row]);
   const savedTaps=taps;
   const bcBtn=$('bc');
@@ -473,16 +685,64 @@ function newGame(){
   crackStop=true;cracking=false;busy=false;tapped=false;
   const bcBtn=document.getElementById('bc');
   if(bcBtn){bcBtn.classList.remove('disabled');bcBtn.innerHTML=SVG_X;}
-  const r=gen();grid=r.grid;sol=r.sol;taps=0;initGrid=grid.map(row=>[...row]);
+  curSeed=(Math.random()*0xFFFFFFFF)>>>0;
+  const r=gen(curSeed);grid=r.grid;sol=r.sol;taps=0;initGrid=grid.map(row=>[...row]);undoStack=[];
+  showSeed();
   try{var sb=document.getElementById('stuckBanner');if(sb)sb.remove();}catch(e){}
-  $ov.classList.add('hide');popSc();render();
+  $('bu').classList.add('disabled');$ov.classList.add('hide');popSc();render();
 }
 function restartLevel(){
   crackStop=true;cracking=false;busy=false;tapped=false;
   const bcBtn=document.getElementById('bc');
   if(bcBtn){bcBtn.classList.remove('disabled');bcBtn.innerHTML=SVG_X;}
   if(initGrid){grid=initGrid.map(row=>[...row]);}
-  taps=0;
+  taps=0;undoStack=[];$('bu').classList.add('disabled');
+  try{var sb=document.getElementById('stuckBanner');if(sb)sb.remove();}catch(e){}
+  $ov.classList.add('hide');popSc();render();
+}
+function undo(){
+  if(busy||!undoStack.length)return;
+  // Close overlay if showing
+  $ov.classList.add('hide');
+  grid=undoStack.pop();
+  taps=Math.max(0,taps-1);
+  if(!undoStack.length){
+    $('bu').classList.add('disabled');
+    tapped=false;$('bc').classList.remove('disabled');
+  }
+  popSc();render();
+}
+function loadSeedFromInput(){
+  const hex=$('seedIn').value.trim().replace(/^0x/i,'');
+  const seed=parseInt(hex,16);
+  if(isNaN(seed)||hex.length===0){$('seedIn').style.borderColor='#e74c3c';setTimeout(()=>$('seedIn').style.borderColor='',1500);return}
+  $('seedOv').classList.add('hide');
+  crackStop=true;cracking=false;busy=false;tapped=false;
+  const bcBtn=document.getElementById('bc');
+  if(bcBtn){bcBtn.classList.remove('disabled');bcBtn.innerHTML=SVG_X;}
+  curSeed=seed>>>0;
+  const r=gen(curSeed);grid=r.grid;sol=r.sol;taps=0;initGrid=grid.map(row=>[...row]);undoStack=[];
+  showSeed();$('bu').classList.add('disabled');
+  try{var sb=document.getElementById('stuckBanner');if(sb)sb.remove();}catch(e){}
+  $ov.classList.add('hide');popSc();render();
+}
+function importGrid(){
+  const text=$('gridIn').value.trim();
+  const rows=text.split(/[\n\r]+/).filter(r=>r.trim());
+  if(rows.length!==10){$('gridIn').style.borderColor='#e74c3c';setTimeout(()=>$('gridIn').style.borderColor='',1500);return}
+  const g=[];
+  for(let r=0;r<10;r++){
+    const cells=rows[r].split(/[,\s]+/).map(Number);
+    if(cells.length!==10||cells.some(isNaN)){$('gridIn').style.borderColor='#e74c3c';setTimeout(()=>$('gridIn').style.borderColor='',1500);return}
+    g.push(cells);
+  }
+  $('importOv').classList.add('hide');
+  crackStop=true;cracking=false;busy=false;tapped=false;
+  const bcBtn=document.getElementById('bc');
+  if(bcBtn){bcBtn.classList.remove('disabled');bcBtn.innerHTML=SVG_X;}
+  grid=g;sol=[];taps=0;curSeed=0;initGrid=grid.map(row=>[...row]);undoStack=[];
+  $('seedVal').textContent='imported';
+  $('bu').classList.add('disabled');
   try{var sb=document.getElementById('stuckBanner');if(sb)sb.remove();}catch(e){}
   $ov.classList.add('hide');popSc();render();
 }
@@ -496,12 +756,12 @@ function togTheme(){
 function showHelp(){
   const ov=document.createElement('div');
   ov.className='help-overlay';
-  ov.innerHTML='<div class="help-card"><h3>HOW TO PLAY</h3>'
-    +'<p><b>目标：</b>最后一次点击恰好消除 <b>19</b> 个灰色方块即可通关。</p>'
-    +'<p><b>操作：</b>点击任意色块，该色块所在的 <b>整行 + 整列</b> 所有色块颜色各降一级。无色块不受影响。</p>'
-    +'<p><b>颜色等级：</b>黑 → 紫 → 蓝 → 青 → 绿 → 黄 → 橙 → 红 → 灰 → 无色（消除）</p>'
-    +'<p><b>得分：</b>点击次数越少越好。</p>'
-    +'<p class="help-hint">点击任意位置关闭</p></div>';
+  ov.innerHTML='<div class="help-card"><h3>'+t('helpTitle')+'</h3>'
+    +'<p>'+t('helpGoal')+'</p>'
+    +'<p>'+t('helpOp')+'</p>'
+    +'<p>'+t('helpColors')+'</p>'
+    +'<p>'+t('helpScore')+'</p>'
+    +'<p class="help-hint">'+t('helpClose')+'</p></div>';
   ov.addEventListener('click',function(){ov.remove();});
   document.body.appendChild(ov);
 }
@@ -598,7 +858,7 @@ setInterval(function(){
   if(rem>0&&rem<19&&!cracking&&!document.getElementById('stuckBanner')){
     var div=document.createElement('div');
     div.id='stuckBanner';
-    div.innerHTML='<div style="background:var(--hdr,#f5ebe0);border:2px solid var(--accent,#b87060);border-radius:16px;padding:32px 40px;text-align:center;max-width:340px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.5)"><div style="font-size:48px;margin-bottom:8px">✗</div><h2 style="font-size:24px;font-weight:300;letter-spacing:4px;margin-bottom:12px">FAILED</h2><p style="font-size:16px;margin-bottom:8px">Remaining '+rem+' blocks &lt; 19</p><p style="font-size:14px;color:#8b7e74;margin-bottom:16px">Cannot win this round</p><div style="display:flex;gap:12px;justify-content:center"><button id="stuckRetry" style="background:var(--accent,#b87060);color:#fff;border:none;border-radius:10px;padding:12px 24px;font-size:14px;font-weight:bold;cursor:pointer">RESTART</button><button id="stuckNew" style="background:var(--cell-empty,rgba(187,173,160,.3));color:var(--txt,#5a4e44);border:1px solid var(--grid,#cdc1b4);border-radius:10px;padding:12px 24px;font-size:14px;font-weight:bold;cursor:pointer">NEW GAME</button></div></div>';
+    div.innerHTML='<div style="background:var(--hdr,#f5ebe0);border:2px solid var(--accent,#b87060);border-radius:16px;padding:32px 40px;text-align:center;max-width:340px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.5)"><div style="font-size:48px;margin-bottom:8px">✗</div><h2 style="font-size:24px;font-weight:300;letter-spacing:4px;margin-bottom:12px">'+t('stuckTitle')+'</h2><p style="font-size:16px;margin-bottom:8px">'+t('stuckMsg',rem)+'</p><p style="font-size:14px;color:#8b7e74;margin-bottom:16px">'+t('stuckSub')+'</p><div style="display:flex;gap:12px;justify-content:center"><button id="stuckRetry" style="background:var(--accent,#b87060);color:#fff;border:none;border-radius:10px;padding:12px 24px;font-size:14px;font-weight:bold;cursor:pointer">'+t('restart')+'</button><button id="stuckNew" style="background:var(--cell-empty,rgba(187,173,160,.3));color:var(--txt,#5a4e44);border:1px solid var(--grid,#cdc1b4);border-radius:10px;padding:12px 24px;font-size:14px;font-weight:bold;cursor:pointer">'+t('newGame')+'</button></div></div>';
     div.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;z-index:99999;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;';
     document.body.appendChild(div);
     document.getElementById('stuckRetry').onclick=function(){
@@ -618,13 +878,51 @@ function init(){
   document.documentElement.dataset.theme=theme;
   $('bt').innerHTML=theme==='valley'?SVG_DIAMOND:SVG_SQUARE;
   resizeCv();window.addEventListener('resize',resizeCv);
-  newGame();tickParts();
+  newGame();tickParts();applyLang();
+  $('blang').addEventListener('click',()=>{lang=lang==='en'?'cn':'en';applyLang();save();});
   $('bc').addEventListener('click',crack);
   $('bn2').addEventListener('click',newGame);
   $('bt').addEventListener('click',togTheme);
+  $('bu').addEventListener('click',undo);
   $('bh').addEventListener('click',showHelp);
+  $('bCopySeed').addEventListener('click',()=>{
+    navigator.clipboard.writeText(curSeed.toString(16).padStart(8,'0')).then(()=>{
+      const btn=$('bCopySeed');const old=btn.textContent;btn.style.minWidth=btn.offsetWidth+'px';btn.textContent=t('copied');setTimeout(()=>{btn.textContent=old;btn.style.minWidth='';},1200);
+    });
+  });
+  $('bLoadSeed').addEventListener('click',()=>{
+    const ov=$('seedOv');ov.classList.remove('hide');
+    $('seedIn').value='';
+    const card=ov.querySelector('.help-card');if(card)card.style.transform='';
+    setTimeout(()=>$('seedIn').focus(),100);
+  });
+  $('seedOv').addEventListener('click',e=>{if(e.target===$('seedOv'))$('seedOv').classList.add('hide');});
+  $('seedConfirm').addEventListener('click',loadSeedFromInput);
+  $('seedIn').addEventListener('keydown',e=>{if(e.key==='Enter')loadSeedFromInput();});
+  // Keyboard viewport handling
+  if(window.visualViewport){
+    const seedOv=$('seedOv');
+    const adjustVP=()=>{
+      if(seedOv.classList.contains('hide'))return;
+      const card=seedOv.querySelector('.help-card');
+      if(!card)return;
+      const vp=window.visualViewport;
+      const kbH=Math.max(0,window.innerHeight-vp.height-vp.offsetTop);
+      card.style.transform=kbH>50?'translateY(-'+Math.min(kbH*0.4,120)+'px)':'';
+    };
+    window.visualViewport.addEventListener('resize',adjustVP);
+    window.visualViewport.addEventListener('scroll',adjustVP);
+  }
+  $('bImport').addEventListener('click',()=>{
+    $('importOv').classList.remove('hide');
+    $('gridIn').value='';
+    setTimeout(()=>$('gridIn').focus(),100);
+  });
+  $('importOv').addEventListener('click',e=>{if(e.target===$('importOv'))$('importOv').classList.add('hide');});
+  $('importConfirm').addEventListener('click',importGrid);
   $('bx').addEventListener('click',()=>{
-    newGame();
+    const action=$('bx').dataset.action;
+    if(action==='retry')restartLevel();else newGame();
   });
 }
 init();

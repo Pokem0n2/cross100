@@ -95,6 +95,7 @@ header{width:100%;display:flex;flex-direction:column;gap:8px;padding:10px 0}
   background:rgba(187,173,160,.3);color:var(--txt);border:1px solid var(--grid);font-size:16px;border-radius:50%;
   line-height:1;text-align:center}
 [data-theme="pixel"] .btn-icon{background:rgba(30,30,80,.85)}
+[data-theme="pixel"] .btn{background:#c0392b}
 .btn-icon.disabled{opacity:.35;cursor:default;pointer-events:none}
 
 .stats{display:flex;justify-content:center;gap:8px;flex-wrap:wrap}
@@ -266,7 +267,7 @@ const SVG_X='<svg width="14" height="14" viewBox="0 0 14 14"><line x1="2" y1="2"
 
 /* ═══ DOM ═══ */
 const $g=$('grid'),$sc=$('sc'),
-      $ov=$('ov'),$fs=$('fs'),$cv=$('cv'),
+      $ov=$('ov'),$fs=$('fs'),$cv=$('cv'),$bx=$('bx'),
       ctx=$cv.getContext('2d');
 function $(id){return document.getElementById(id)}
 

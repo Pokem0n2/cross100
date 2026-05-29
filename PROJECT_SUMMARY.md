@@ -112,15 +112,15 @@ cross100/
       <div class="stat"><span class="stat-l" data-i18n="taps">Taps</span>
         <span id="sc" class="stat-v">0</span></div>
       <div class="stat"><span class="stat-l" data-i18n="left">Left</span>
-        <span id="rm" class="stat-v">0</span></div>
+        <span id="rm" class="stat-v">100</span></div>
     </div>
     <div id="seedRow" class="seed-row">
       <span data-i18n="seed">seed</span>: <span id="seedVal"></span>
     </div>
     <div class="seed-btns">
-      <button id="bLoadSeed" class="btn-sm">Load Seed</button>
-      <button id="bImport" class="btn-sm">Import Matrix</button>
-      <button id="bCopySeed" class="btn-sm">Copy Seed</button>
+      <button id="bLoadSeed" class="btn btn-sm" data-i18n="loadSeed">Load Seed</button>
+      <button id="bImport" class="btn btn-sm" data-i18n="importMatrix">Import Matrix</button>
+      <button id="bCopySeed" class="btn btn-sm" data-i18n="copySeed">Copy Seed</button>
     </div>
   </header>
   <main id="game">
@@ -134,29 +134,33 @@ cross100/
     <button id="bn2" class="btn">NEW GAME</button>
     <button id="bc" class="btn-icon disabled">  <!-- 演示解法 (▶/✕) -->
   </footer>
-  <button id="bu" class="undo-btn disabled">Undo</button>
+  <button id="bu" class="undo-btn disabled"><!-- SVG undo arrow icon --></button>
   <!-- 通关/失败覆层 -->
   <div id="ov" class="ov hide">
     <div class="ov-card">
-      <div id="oi" class="ov-icon"></div>
-      <h2 id="ot" class="ov-title"></h2>
-      <div class="ov-score"><span id="fs"></span> <span data-i18n="taps">Taps</span></div>
+      <div id="oi" class="ov-icon">✦</div>
+      <h2 id="ot" class="ov-title">CLEARED!</h2>
+      <p class="ov-score"><span data-i18n="taps">Taps</span>: <strong id="fs">0</strong></p>
       <p id="om" class="ov-msg"></p>
-      <button id="bx" class="btn-pri"></button>
+      <button id="bx" class="btn btn-pri" data-i18n="newGame">NEW GAME</button>
     </div>
   </div>
   <!-- 种子加载覆层 -->
   <div id="seedOv" class="help-overlay hide">
     <div class="help-card">
+      <h3 data-i18n="loadSeedTitle">LOAD SEED</h3>
+      <p class="help-hint" data-i18n="loadSeedHint">Enter seed ID to load a level</p>
       <input id="seedIn" class="seed-input" maxlength="8" inputmode="hex" />
-      <button id="seedConfirm" class="btn-sm">Confirm</button>
+      <button id="seedConfirm" class="btn btn-pri" data-i18n="confirm">Confirm</button>
     </div>
   </div>
   <!-- 网格导入覆层 -->
   <div id="importOv" class="help-overlay hide">
     <div class="help-card">
+      <h3 data-i18n="importGridTitle">IMPORT GRID</h3>
+      <p class="help-hint" data-i18n="importGridHint">Paste 10×10 number matrix</p>
       <textarea id="gridIn" class="grid-textarea" rows="10"></textarea>
-      <button id="importConfirm" class="btn-sm">Confirm</button>
+      <button id="importConfirm" class="btn btn-pri" data-i18n="confirm">Confirm</button>
     </div>
   </div>
 </div>
@@ -201,7 +205,7 @@ cross100/
   --rad: 16px;           /* 大圆角 */
   --crad: 8px;           /* 小圆角 */
   --gap: 4px;
-  `--font: 'Segoe UI', system-ui, -apple-system, sans-serif`
+  --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
   --speed: .3s;          /* 动画速度 */
   --sh: rgba(90,78,68,.12);  /* 阴影色 */
 }

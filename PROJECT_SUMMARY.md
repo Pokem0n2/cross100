@@ -172,7 +172,8 @@ cross100/
 | 帮助 | 动态创建 (.help-overlay) | 200 | 游戏规则说明 |
 | 卡死横幅 | 动态创建 (#stuckBanner) | 99999 | 全屏卡死提示 |
 
-- 种子覆层、导入覆层、帮助覆层支持点击遮罩区域关闭
+- 种子覆层、导入覆层支持点击遮罩区域关闭（精确检测 `e.target === overlay`）
+- 帮助覆层点击**任意位置**关闭（包括卡片内部，未做 target 检测）
 - 通关/失败覆层 `#ov` 仅通过按钮 `#bx` 操作，**不支持**点击遮罩关闭
 - 卡死横幅仅通过两个按钮操作，**不支持**点击遮罩关闭
 - 种子覆层支持虚拟键盘自动上移（`visualViewport` 事件）
@@ -401,29 +402,40 @@ function universalSolver(g) {
   for (let i = 0; i < N; i++)
     for (let j = 0; j < N; j++) {
       const z = A[i] + B[j] - D[i][j];
-      if (z < 0) return null;
+      if (g[i][j] >= 0 && z < 0) return null;   // 有内容格子：z 必须 ≥ 0
+      if (g[i][j] < 0 && z !== 0) return null;   // 空格子：z 必须恰好为 0
       for (let k = 0; k < z; k++) taps.push({r: i, c: j});
     }
   // 按格子值降序排序（通过查原网格）
   taps.sort((a, b) => g[b.r][b.c] - g[a.r][a.c]);
 
-  // 贪心调度：逐个尝试，模拟验证不导致过度递减
+  // 贪心调度：while 循环 + Set 追踪未完成项，跳过暂不可执行的点击并重试
   let seq = [], sim = g.map(row => [...row]);
-  for (const tp of taps) {
-    if (sim[tp.r][tp.c] < 0) continue;
-    let ok = true;
-    for (let k = 0; k < N; k++) {
-      if (sim[tp.r][k] >= 0 && sim[tp.r][k] - 1 < -1) ok = false;
-      if (k !== tp.r && sim[k][tp.c] >= 0 && sim[k][tp.c] - 1 < -1) ok = false;
+  let pending = new Set(taps.map((_, i) => i));
+  let progress = true;
+  while (pending.size > 0 && progress) {
+    progress = false;
+    for (const idx of pending) {
+      const tp = taps[idx];
+      if (sim[tp.r][tp.c] < 0) { pending.delete(idx); continue; }
+      let ok = true;
+      for (let k = 0; k < N; k++) {
+        if (sim[tp.r][k] >= 0 && sim[tp.r][k] - 1 < -1) { ok = false; break; }
+      }
+      if (ok) for (let k = 0; k < N; k++) {
+        if (k !== tp.r && sim[k][tp.c] >= 0 && sim[k][tp.c] - 1 < -1) { ok = false; break; }
+      }
+      if (!ok) continue;  // 跳过，下轮重试
+      for (let k = 0; k < N; k++) {
+        if (sim[tp.r][k] >= 0) sim[tp.r][k]--;
+        if (k !== tp.r && sim[k][tp.c] >= 0) sim[k][tp.c]--;
+      }
+      seq.push({r: tp.r, c: tp.c});
+      pending.delete(idx);
+      progress = true;
     }
-    if (!ok) return null;
-    for (let k = 0; k < N; k++) {
-      if (sim[tp.r][k] >= 0) sim[tp.r][k]--;
-      if (k !== tp.r && sim[k][tp.c] >= 0) sim[k][tp.c]--;
-    }
-    seq.push({r: tp.r, c: tp.c});
   }
-  return seq;
+  return pending.size === 0 ? seq : null;  // 无法全部调度则无解
 }
 ```
 
@@ -738,7 +750,7 @@ Java 源码/目标级别：8。签名密钥：debug keystore。
 | `updRem` | `updRem()` | 统计并显示剩余方块 |
 | `showWin` | `showWin()` | 显示通关覆层 |
 | `showFail` | `showFail()` | 显示失败覆层 |
-| `showStuck` | `showStuck()` | 显示卡死覆层 |
+| `showStuck` | `showStuck()` | 显示卡死覆层（**死代码**：看门狗直接内联创建 UI，从未调用此函数） |
 | `universalSolver` | `universalSolver(g)` | 线性代数求解器 |
 | `crack` | `crack()` | 逐步动画播放解法 |
 | `newGame` | `newGame()` | 生成新随机游戏 |

@@ -142,11 +142,7 @@ footer .btn-icon{position:absolute;right:12px;bottom:12px}
 
   <div id="output"></div>
 
-  <footer>
-    <button class="btn-icon" id="bt2">
-      <svg width="16" height="16" viewBox="0 0 16 16"><polygon points="8,1 15,8 8,15,1,8" fill="currentColor" stroke="none"/></svg>
-    </button>
-  </footer>
+  <footer></footer>
 </div>
 
 <script>
@@ -196,7 +192,6 @@ function togTheme(){
   theme=theme==='valley'?'pixel':'valley';
   document.documentElement.dataset.theme=theme;
   $('bt').innerHTML=theme==='valley'?SVG_D:SVG_S;
-  $('bt2').innerHTML=theme==='valley'?SVG_D:SVG_S;
   localStorage.setItem('cross_solver_t',theme);
   if(grid)renderGrid(grid);
 }
@@ -295,13 +290,24 @@ function showResult(g,sol){
     out.innerHTML='<div class="msg err">'+t('noSol')+'</div>';
     return;
   }
+  /* Sort steps by R then C ascending, verify result */
+  const sorted=[...sol].sort((a,b)=>a.r!==b.r?a.r-b.r:a.c-b.c);
+  const sim=g.map(row=>[...row]);
+  for(const s of sorted){
+    if(sim[s.r][s.c]<0)break;
+    for(let k=0;k<N;k++){if(sim[s.r][k]>=0)sim[s.r][k]--}
+    for(let k=0;k<N;k++){if(k!==s.r&&sim[k][s.c]>=0)sim[k][s.c]--}
+  }
+  const allCleared=sim.every(row=>row.every(v=>v<0));
+  const steps=allCleared?sorted:sol;
+
   let html='<div class="sol-header">';
-  html+='<span class="sol-title">'+sol.length+' '+t('steps')+'</span>';
+  html+='<span class="sol-title">'+steps.length+' '+t('steps')+'</span>';
   html+='<button class="copy-btn" id="bCopy">'+t('copySteps')+'</button>';
   html+='</div>';
   html+='<div class="step-list">';
-  for(let i=0;i<sol.length;i++){
-    const s=sol[i];
+  for(let i=0;i<steps.length;i++){
+    const s=steps[i];
     const pad=String(i+1).padStart(2,'0');
     const rPad=String(s.r+1).padStart(2,' ');
     const cPad=String(s.c+1).padStart(2,' ');
@@ -315,9 +321,9 @@ function showResult(g,sol){
 
   $('bCopy').addEventListener('click',function(){
     let text='';
-    for(let i=0;i<sol.length;i++){
+    for(let i=0;i<steps.length;i++){
       const pad=String(i+1).padStart(2,'0');
-      text+=t('step')+' '+pad+', R '+(sol[i].r+1)+' C '+(sol[i].c+1)+'\n';
+      text+=t('step')+' '+pad+', R '+(steps[i].r+1)+' C '+(steps[i].c+1)+'\n';
     }
     navigator.clipboard.writeText(text.trim()).then(()=>{
       const btn=$('bCopy');const old=btn.textContent;
@@ -378,12 +384,10 @@ function init(){
   lang=localStorage.getItem('cross_solver_l')||'en';
   document.documentElement.dataset.theme=theme;
   $('bt').innerHTML=theme==='valley'?SVG_D:SVG_S;
-  $('bt2').innerHTML=theme==='valley'?SVG_D:SVG_S;
   applyLang();
   clearAll();
 
   $('bt').addEventListener('click',togTheme);
-  $('bt2').addEventListener('click',togTheme);
   $('blang').addEventListener('click',()=>{
     lang=lang==='en'?'cn':'en';
     localStorage.setItem('cross_solver_l',lang);

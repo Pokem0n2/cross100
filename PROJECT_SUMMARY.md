@@ -22,7 +22,7 @@ Cross100 是一款极简风格的 HTML5 颜色解谜游戏。核心玩法基于 
 | **卡死检测** | 300ms 轮询看门狗，剩余 < 19 方块自动提示 |
 | **解法演示** | `crack()` 逐步动画播放求解器输出 |
 | **Android APK** | WebView 壳打包，手动工具链编译（无 Gradle） |
-| **Walkthrough** | 831KB 独立 HTML 文档，40 步图文详解 |
+| **Walkthrough** | 812KB 独立 HTML 文档，40 步图文详解 |
 
 ---
 
@@ -413,15 +413,16 @@ function universalSolver(g) {
   // 按格子值降序排序（通过查原网格）
   taps.sort((a, b) => g[b.r][b.c] - g[a.r][a.c]);
 
-  // 贪心调度：while 循环 + Set 追踪未完成项，跳过暂不可执行的点击并重试
+  // 贪心调度：遍历点击列表，找到可执行的点击就应用并重启扫描
   let seq = [], sim = g.map(row => [...row]);
-  let pending = new Set(taps.map((_, i) => i));
-  let progress = true;
-  while (pending.size > 0 && progress) {
-    progress = false;
-    for (const idx of pending) {
+  let used = new Set();
+  while (seq.length < taps.length) {
+    let found = false;
+    for (let idx = 0; idx < taps.length; idx++) {
+      if (used.has(idx)) continue;
       const tp = taps[idx];
-      if (sim[tp.r][tp.c] < 0) { pending.delete(idx); continue; }
+      if (sim[tp.r][tp.c] < 0) { used.add(idx); continue; }
+      // 检查此点击是否安全（不导致任何格子低于 -1）
       let ok = true;
       for (let k = 0; k < N; k++) {
         if (sim[tp.r][k] >= 0 && sim[tp.r][k] - 1 < -1) { ok = false; break; }
@@ -429,17 +430,20 @@ function universalSolver(g) {
       if (ok) for (let k = 0; k < N; k++) {
         if (k !== tp.r && sim[k][tp.c] >= 0 && sim[k][tp.c] - 1 < -1) { ok = false; break; }
       }
-      if (!ok) continue;  // 跳过，下轮重试
+      if (!ok) continue;
+      // 执行此点击
       for (let k = 0; k < N; k++) {
         if (sim[tp.r][k] >= 0) sim[tp.r][k]--;
         if (k !== tp.r && sim[k][tp.c] >= 0) sim[k][tp.c]--;
       }
       seq.push({r: tp.r, c: tp.c});
-      pending.delete(idx);
-      progress = true;
+      used.add(idx);
+      found = true;
+      break;  // 重新从头扫描（新状态可能解锁前面跳过的点击）
     }
+    if (!found) return null;  // 无可执行点击 → 无解
   }
-  return pending.size === 0 ? seq : null;  // 无法全部调度则无解
+  return seq;
 }
 ```
 
@@ -654,7 +658,7 @@ Java 源码/目标级别：8。签名密钥：debug keystore。
 
 ## 11. Walkthrough 分析文档
 
-`walkthrough.html` 是一份独立的中文解谜教学文档（3551 行，约 831KB）。
+`walkthrough.html` 是一份独立的中文解谜教学文档（3551 行，约 812KB）。
 
 ### 结构
 
@@ -679,7 +683,9 @@ Java 源码/目标级别：8。签名密钥：debug keystore。
 - 响应式：768px 断点折叠双栏为单栏，格子从 38px 缩至 28px
 - 步骤卡片颜色编码：普通（蓝色）、最终步（红色）、完成（绿色）
 
-### Meta 标签
+### Meta 标签（来自 index.html）
+
+> 注意：walkthrough.html 仅使用简化的 `<meta name="viewport" content="width=device-width, initial-scale=1.0">`
 
 ```html
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">

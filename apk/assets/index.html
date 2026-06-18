@@ -396,20 +396,20 @@ let grid=[],taps=0,busy=false,theme='valley',lang='en',lastGray=0,sol=[],crackin
 let pendingResult=null;
 
 /* ═══ audio / SFX ═══ */
-// Preload the three loops as HTMLAudioElement. We use the Web Audio API
-// for tight SFX trigger timing (sparks fire on tap, must play in <50ms);
-// a single AudioContext is created lazily on first user gesture to
+// BGM uses AudioBufferSourceNode (sample-accurate seamless loop, no gap).
+// SFX (laser/explosion) use HTMLAudioElement clones (one-shot, overlap OK).
+// A single AudioContext is created lazily on first user gesture to
 // satisfy Android WebView autoplay policy.
 let _ac=null;
+let _bgmBuffer=null;       // decoded AudioBuffer for BGM
+let _bgmSrc=null;          // current AudioBufferSourceNode (null = stopped)
+let _bgmGain=null;         // GainNode for BGM volume
 const SFX={
-  bgm:new Audio('bgm.ogg'),
   laser:new Audio('laser.ogg'),
   explosion:new Audio('explosion.ogg'),
 };
-SFX.bgm.loop=true; SFX.bgm.volume=0.30;
 SFX.laser.volume=0.75;
 SFX.explosion.volume=0.80;
-// Preload hint (browsers may still defer actual fetch until play()).
 for(const k in SFX){ SFX[k].preload='auto'; SFX[k].load(); }
 
 let soundOn=(function(){ try{ const v=localStorage.getItem('cross_sound'); return v==null?true:v==='1'; }catch(e){ return true; } })();
@@ -421,9 +421,15 @@ function _ensureAC(){
   }catch(e){ _ac=null; }
   return _ac;
 }
+// Decode BGM into AudioBuffer (async, called once)
+function _decodeBgm(){
+  if(_bgmBuffer||!_ac)return;
+  fetch('bgm.ogg').then(r=>r.arrayBuffer()).then(buf=>{
+    _ac.decodeAudioData(buf, function(d){ _bgmBuffer=d; }, function(){});
+  }).catch(function(){});
+}
 function playSfx(key){
   if(!soundOn)return;
-  // Clone the audio node so rapid taps can overlap without cutting off.
   const a=SFX[key]; if(!a)return;
   try{
     const c=a.cloneNode(true);
@@ -434,13 +440,18 @@ function playSfx(key){
 }
 function startBgm(){
   if(!soundOn)return;
-  const a=SFX.bgm;
-  a.currentTime=0;
-  const p=a.play();
-  if(p&&p.catch)p.catch(()=>{ /* resume on next gesture */ });
+  if(_bgmSrc)return; // already playing
+  _ensureAC();
+  if(!_ac||!_bgmBuffer)return;
+  _bgmSrc=_ac.createBufferSource();
+  _bgmSrc.buffer=_bgmBuffer;
+  _bgmSrc.loop=true;
+  if(!_bgmGain){ _bgmGain=_ac.createGain(); _bgmGain.gain.value=0.30; _bgmGain.connect(_ac.destination); }
+  _bgmSrc.connect(_bgmGain);
+  _bgmSrc.start(0);
 }
 function stopBgm(){
-  try{ SFX.bgm.pause(); SFX.bgm.currentTime=0; }catch(e){}
+  if(_bgmSrc){ try{_bgmSrc.stop(0);}catch(e){} _bgmSrc.disconnect(); _bgmSrc=null; }
 }
 function toggleSound(){
   soundOn=!soundOn;
@@ -449,9 +460,11 @@ function toggleSound(){
   if(btn)btn.textContent=soundOn?'🔊':'🔇';
   if(soundOn){
     _ensureAC();
-    // Try to resume context (autoplay policy)
     if(_ac && _ac.state==='suspended')_ac.resume();
-    startBgm();
+    if(!_bgmBuffer)_decodeBgm();
+    // BGM will start once buffer finishes decoding; retry after 200ms
+    if(_bgmBuffer){ startBgm(); }
+    else{ setTimeout(function(){ if(soundOn)startBgm(); },300); }
   }else{
     stopBgm();
   }
@@ -1285,7 +1298,9 @@ function startLevel(level){
   applyLang();
   _ensureAC();
   if(_ac && _ac.state==='suspended')_ac.resume();
-  startBgm();
+  if(!_bgmBuffer)_decodeBgm();
+  if(_bgmBuffer){ startBgm(); }
+  else{ setTimeout(function(){ if(soundOn)startBgm(); },300); }
   newGame();
 }
 function showLauncher(){

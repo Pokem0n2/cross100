@@ -421,20 +421,23 @@ function playSfx(key){
     if(p&&p.catch)p.catch(()=>{});
   }catch(e){}
 }
-// Ping-pong BGM: two <audio> elements alternate at ~30ms before end.
-// RAF checks at 60fps (16ms precision) for a near-seamless switch.
+// Ping-pong BGM: two <audio> elements alternate for near-seamless loop.
+// - B is "warmed up" (play+pause) at start so its first real play() is instant
+// - Switch order: play B FIRST, then pause A (overlap → no gap)
+// - setInterval 4ms for tighter switch precision than RAF (16ms)
 function _bgmCheckLoop(){
   if(!_bgmActive)return;
   var el=_bgmActive;
-  if(el.duration && el.currentTime >= el.duration-0.03){
+  if(el.duration && el.currentTime >= el.duration-0.008){
+    var next=(el===_bgmA)?_bgmB:_bgmA;
+    // Play B BEFORE pausing A → overlap to eliminate gap
+    next.currentTime=0;
+    var p=next.play();
+    if(p&&p.catch)p.catch(()=>{});
     el.pause();
     el.currentTime=0;
-    _bgmActive = (el===_bgmA)?_bgmB:_bgmA;
-    _bgmActive.currentTime=0;
-    var p=_bgmActive.play();
-    if(p&&p.catch)p.catch(()=>{});
+    _bgmActive=next;
   }
-  _bgmRAF=requestAnimationFrame(_bgmCheckLoop);
 }
 function startBgm(){
   if(!soundOn)return;
@@ -447,12 +450,19 @@ function startBgm(){
     _bgmA.currentTime=0;
     var p=_bgmA.play();
     if(p&&p.catch)p.catch(()=>{});
-    cancelAnimationFrame(_bgmRAF);
-    _bgmCheckLoop();
+    // Warm up B: play+pause so audio pipeline is primed for instant switch
+    _bgmB.currentTime=0;
+    var wp=_bgmB.play();
+    if(wp&&wp.then)wp.then(function(){
+      _bgmB.pause();
+      _bgmB.currentTime=0;
+    }).catch(()=>{});
+    clearInterval(_bgmRAF);
+    _bgmRAF=setInterval(_bgmCheckLoop,4);
   }
 }
 function stopBgm(){
-  if(_bgmRAF)cancelAnimationFrame(_bgmRAF);
+  if(_bgmRAF)clearInterval(_bgmRAF);
   _bgmRAF=null;
   if(_bgmA){_bgmA.pause();_bgmA.currentTime=0;}
   if(_bgmB){_bgmB.pause();_bgmB.currentTime=0;}

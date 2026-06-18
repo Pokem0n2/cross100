@@ -524,15 +524,15 @@ function tap(r,c){
   undoStack.push(grid.map(row=>[...row]));$('bu').classList.remove('disabled');
   emitSW(r,c);
 
+  /* ── compute affected cells ── */
   const aff=[];
-  for(let cc=0;cc<N;cc++)if(grid[r][cc]>=0)aff.push({r,c:cc,d:Math.abs(cc-c)*25});
-  for(let rr=0;rr<N;rr++)if(rr!==r&&grid[rr][c]>=0)aff.push({r:rr,c,d:Math.abs(rr-r)*25});
-  aff.sort((a,b)=>a.d-b.d);
+  for(let cc=0;cc<N;cc++)if(grid[r][cc]>=0)aff.push({r,c:cc,d:Math.abs(cc-c)});
+  for(let rr=0;rr<N;rr++)if(rr!==r&&grid[rr][c]>=0)aff.push({r:rr,c,d:Math.abs(rr-r)});
 
   const tapEl=$g.children[r*N+c];
   if(tapEl){tapEl.classList.add('tap');setTimeout(()=>tapEl.classList.remove('tap'),350)}
 
-  /* ── grid update + gray count (sync) ── */
+  /* ── grid update + gray count (sync — game logic must be immediate) ── */
   const gone=[];
   const grayClr=[];
   for(const cell of aff){
@@ -542,35 +542,28 @@ function tap(r,c){
     if(grid[cell.r][cell.c]===-1)gone.push({r:cell.r,c:cell.c});
   }
 
-  /* ── win/fail check (immediate, data already correct) ── */
+  /* ── win/fail check (immediate — data already correct) ── */
+  let res='continue';
   if(!cracking){
     const gc=grayClr.length;
     lastGray=gc;
-    const res=chkGray(gc);
-    if(res==='win')setTimeout(showWin,450);
-    else if(res==='fail')setTimeout(showFail,450);
+    res=chkGray(gc);
+    if(res==='win')setTimeout(showWin,500);
+    else if(res==='fail')setTimeout(showFail,500);
   }
 
-  /* ── animations (visual only, no grid mutation) ── */
-  let mx=0;
-  for(const cell of aff){
-    mx=Math.max(mx,cell.d);
-    setTimeout(()=>{
-      const el=$g.children[cell.r*N+cell.c];
-      if(el){el.classList.add('pop');setTimeout(()=>el.classList.remove('pop'),300)}
-      upd(cell.r,cell.c);
-    },cell.d);
-  }
-
-  setTimeout(()=>{
-    for(const g of gone){
-      const el=$g.children[g.r*N+g.c];
-      if(el){el.classList.add('gone');setTimeout(()=>el.classList.remove('gone'),400)}
-      emit(g.r,g.c);
-    }
-    if(theme==='pixel'&&aff.length>0){$g.classList.add('shake');setTimeout(()=>$g.classList.remove('shake'),120)}
-    busy=false;
-  },mx+180);
+  /* ── visual fx: queued, triggered when shockwave head reaches each cell ── */
+  const tapCell=$g.children[r*N+c];
+  const tapCr=tapCell?tapCell.getBoundingClientRect():null;
+  const cvr=$cv.getBoundingClientRect();
+  pendingFx={
+    affected:aff.map(x=>({r:x.r,c:x.c,d:x.d,key:x.r*N+x.c,done:false})),
+    gone:gone.map(g=>({r:g.r,c:g.c,key:g.r*N+g.c,done:false})),
+    result:res,
+    _tapRow:r,_tapCol:c,
+    _tapCx:tapCr?tapCr.left-cvr.left+tapCr.width/2:0,
+    _tapCy:tapCr?tapCr.top-cvr.top+tapCr.height/2:0
+  };
 }
 
 function chkGray(gc){
@@ -825,7 +818,26 @@ let parts=[];
 let shockwaves=[];
 let rings=[];
 let diamonds=[];
-function resizeCv(){const w=$('gwrap');$cv.width=w.offsetWidth;$cv.height=w.offsetHeight}
+let cellCenters=[];
+let pendingFx=null;
+function resizeCv(){
+  const w=$('gwrap');
+  $cv.width=w.offsetWidth;
+  $cv.height=w.offsetHeight;
+  // Cache cell center coords (relative to canvas) so shockwave head hits are O(1)
+  cellCenters.length=0;
+  const gridEl=$g;
+  const cvr=$cv.getBoundingClientRect();
+  for(let i=0;i<gridEl.children.length;i++){
+    const cr=gridEl.children[i].getBoundingClientRect();
+    cellCenters.push({
+      r:Math.floor(i/N), c:i%N,
+      x:cr.left-cvr.left+cr.width/2,
+      y:cr.top-cvr.top+cr.height/2,
+      half:cr.width/2
+    });
+  }
+}
 
 function emit(r,c){
   const el=$g.children[r*N+c];if(!el)return;
@@ -880,6 +892,63 @@ function emitSW(r,c){
 }
 
 function tickSW(){
+  // Trigger cell-level visual fx when shockwave head enters each affected cell
+  if(pendingFx){
+    for(const cell of pendingFx.affected){
+      if(cell.done)continue;
+      // Hit when shockwave head is within this cell's bounds (on the same row or col)
+      const cc=cellCenters[cell.key];
+      if(!cc)continue;
+      const sameRow=cell.r===pendingFx._tapRow;
+      const sameCol=cell.c===pendingFx._tapCol;
+      const targetX=sameRow?cc.x:pendingFx._tapCx;
+      const targetY=sameCol?cc.y:pendingFx._tapCy;
+      // Cell distance from tap point (in pixels, same axis as the beam)
+      const dx=sameRow?Math.abs(targetX-pendingFx._tapCx):0;
+      const dy=sameCol?Math.abs(targetY-pendingFx._tapCy):0;
+      // Find a shockwave whose head has traveled far enough to reach this cell
+      let hit=false;
+      for(const s of shockwaves){
+        // Must be a beam going in the direction of this cell
+        if(sameRow && s.dy!==0) continue;
+        if(sameCol && s.dx!==0) continue;
+        const hx=s.x+s.dx*s.pos, hy=s.y+s.dy*s.pos;
+        if(sameRow && Math.abs(hy-targetY)<cc.half*0.3){
+          // Hit when head has traveled past this cell's center along X
+          const fromTap=Math.abs(hx-pendingFx._tapCx);
+          if(fromTap>=dx-cc.half*0.2){hit=true;break}
+        }
+        if(sameCol && Math.abs(hx-targetX)<cc.half*0.3){
+          const fromTap=Math.abs(hy-pendingFx._tapCy);
+          if(fromTap>=dy-cc.half*0.2){hit=true;break}
+        }
+      }
+      if(hit){
+        cell.done=true;
+        const el=$g.children[cell.r*N+cell.c];
+        if(el){el.classList.add('pop');setTimeout(()=>el.classList.remove('pop'),300)}
+        upd(cell.r,cell.c);
+        // If this cell is in `gone`, also trigger gone animation + particles when the head passes through center
+        for(const g of pendingFx.gone){
+          if(!g.done && g.key===cell.key){
+            g.done=true;
+            // Defer gone animation slightly so the head visibly passes through
+            setTimeout(()=>{
+              const gel=$g.children[g.r*N+g.c];
+              if(gel){gel.classList.add('gone');setTimeout(()=>gel.classList.remove('gone'),400)}
+              emit(g.r,g.c);
+            },40);
+          }
+        }
+      }
+    }
+    // Unlock busy when all animations done
+    if(pendingFx.affected.every(c=>c.done) && pendingFx.gone.every(g=>g.done) && shockwaves.length===0){
+      if(theme==='pixel'&&pendingFx.affected.length>0){$g.classList.add('shake');setTimeout(()=>$g.classList.remove('shake'),120)}
+      busy=false;
+      pendingFx=null;
+    }
+  }
   for(let i=shockwaves.length-1;i>=0;i--){
     const s=shockwaves[i];
     s.pos+=s.spd;s.life-=.028;

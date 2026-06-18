@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build cross100level.apk
+# Build cross100-v{version}.apk
 # Requires: ANDROID_HOME set, build-tools 34.0.0, platforms;android-34
 # On aarch64 (e.g. DGX Spark), uses box64 for x86_64 aapt2/zipalign/apksigner
 # AND uses java -jar d8.jar explicitly (the d8 bash script can confuse box64)
@@ -11,6 +11,7 @@ ANDROID_JAR="$ANDROID_HOME/platforms/android-34/android.jar"
 BT="$ANDROID_HOME/build-tools/34.0.0"
 D8_JAR="$BT/lib/d8.jar"
 APKSIGNER_JAR="$BT/lib/apksigner.jar"
+
 # Pick host arch
 HOST_ARCH=$(uname -m)
 if [ "$HOST_ARCH" = "x86_64" ]; then
@@ -24,6 +25,13 @@ else
 fi
 APK_DIR="$WS/apk"
 BUILD_DIR="$APK_DIR/build"
+
+# ── Derive version name from latest git tag (e.g. v2.0.18) ──
+VERSION_TAG=$(cd "$WS" && git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+VERSION="${VERSION_TAG#v}"   # strip leading 'v'
+APK_NAME="cross100-v${VERSION}"
+
+echo "Building: $APK_NAME.apk (from tag $VERSION_TAG)"
 
 # 1. Clean build dir
 rm -rf "$BUILD_DIR"
@@ -45,24 +53,22 @@ echo "=== 3. aapt2 compile (resources) ==="
 $X compile -o "$BUILD_DIR/compiled/" --dir "$APK_DIR/res"
 
 echo "=== 4. aapt2 link ==="
-$X link -o "$BUILD_DIR/cross100level.unsigned.apk" \
+$X link -o "$BUILD_DIR/${APK_NAME}.unsigned.apk" \
   -I "$ANDROID_JAR" \
   --manifest "$APK_DIR/AndroidManifest.xml" \
-  --version-code 1 --version-name 1.0.0 \
+  --version-code 1 --version-name "$VERSION" \
   --auto-add-overlay \
   -A "$APK_DIR/assets" \
   "$BUILD_DIR/compiled"/*.flat
 
 echo "=== 5. Add DEX to APK (must be at root as classes.dex) ==="
-# PROJECT_ISSUES_LOG: dex must be at root with filename 'classes.dex' or
-# Android PackageParser rejects with "INSTALL_PARSE_FAILED_BAD_PACKAGE_NAME / 异常"
 cp "$BUILD_DIR/dex/classes.dex" "$BUILD_DIR/classes.dex"
-(cd "$BUILD_DIR" && $A add "cross100level.unsigned.apk" "classes.dex")
+(cd "$BUILD_DIR" && $A add "${APK_NAME}.unsigned.apk" "classes.dex")
 
 echo "=== 6. zipalign ==="
-$W -f 4 "$BUILD_DIR/cross100level.unsigned.apk" "$BUILD_DIR/cross100level.aligned.apk"
+$W -f 4 "$BUILD_DIR/${APK_NAME}.unsigned.apk" "$BUILD_DIR/${APK_NAME}.aligned.apk"
 
-echo "=== 7. Sign with debug.keystore (v1 + v2 + v3, v1 needed for legacy installers) ==="
+echo "=== 7. Sign with debug.keystore (v1 + v2 + v3) ==="
 KS="$HOME/.android/debug.keystore"
 if [ ! -f "$KS" ]; then
   mkdir -p "$HOME/.android"
@@ -73,18 +79,16 @@ if [ ! -f "$KS" ]; then
     -dname "CN=Android Debug,O=Android,C=US"
 fi
 
-# --v1-signing-enabled=true forces JAR/META-INF signing block too
-# (default v2+v3 alone misses it, which some installers reject)
 $Z sign --ks "$KS" \
   --ks-pass pass:android --key-pass pass:android \
   --v1-signing-enabled true --v2-signing-enabled true --v3-signing-enabled true \
-  --out "$BUILD_DIR/cross100level.apk" \
-  "$BUILD_DIR/cross100level.aligned.apk"
+  --out "$BUILD_DIR/${APK_NAME}.apk" \
+  "$BUILD_DIR/${APK_NAME}.aligned.apk"
 
 echo "=== 8. Verify ==="
-$Z verify --verbose "$BUILD_DIR/cross100level.apk"
+$Z verify --verbose "$BUILD_DIR/${APK_NAME}.apk"
 
 # 9. Copy to workspace root
-cp "$BUILD_DIR/cross100level.apk" "$WS/cross100level.apk"
-ls -la "$WS/cross100level.apk"
-echo "✅ APK built: $WS/cross100level.apk"
+cp "$BUILD_DIR/${APK_NAME}.apk" "$WS/${APK_NAME}.apk"
+ls -la "$WS/${APK_NAME}.apk"
+echo "✅ APK built: $WS/${APK_NAME}.apk"

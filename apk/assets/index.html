@@ -271,6 +271,7 @@ footer{display:flex;gap:8px;padding:10px 0;justify-content:space-between;width:1
     <div class="hdr-top">
       <span class="logo" id="logo" style="cursor:pointer">CROSS</span>
       <div class="hdr-btns">
+        <button class="btn-icon" id="bsnd" title="Sound" style="font-size:14px;line-height:1;padding:0;font-family:system-ui">🔊</button>
         <button class="lang-btn btn-icon" id="blang" style="font-size:11px;font-weight:600;letter-spacing:1px">EN</button>
         <button class="btn-icon" id="bh" title="Help">?</button>
       </div>
@@ -393,6 +394,68 @@ let grid=[],taps=0,busy=false,theme='valley',lang='en',lastGray=0,sol=[],crackin
 // pendingResult holds 'win' or 'fail' set by tap(); tryJudge() fires the banner
 // only when all animation state arrays are empty (animation fully resolved).
 let pendingResult=null;
+
+/* ═══ audio / SFX ═══ */
+// Preload the three loops as HTMLAudioElement. We use the Web Audio API
+// for tight SFX trigger timing (sparks fire on tap, must play in <50ms);
+// a single AudioContext is created lazily on first user gesture to
+// satisfy Android WebView autoplay policy.
+let _ac=null;
+const SFX={
+  bgm:new Audio('bgm.wav'),
+  laser:new Audio('laser.wav'),
+  explosion:new Audio('explosion.wav'),
+};
+SFX.bgm.loop=true; SFX.bgm.volume=0.30;
+SFX.laser.volume=0.75;
+SFX.explosion.volume=0.80;
+// Preload hint (browsers may still defer actual fetch until play()).
+for(const k in SFX){ SFX[k].preload='auto'; SFX[k].load(); }
+
+let soundOn=(function(){ try{ const v=localStorage.getItem('cross_sound'); return v==null?true:v==='1'; }catch(e){ return true; } })();
+
+function _ensureAC(){
+  if(_ac)return _ac;
+  try{
+    _ac=new (window.AudioContext||window.webkitAudioContext)();
+  }catch(e){ _ac=null; }
+  return _ac;
+}
+function playSfx(key){
+  if(!soundOn)return;
+  // Clone the audio node so rapid taps can overlap without cutting off.
+  const a=SFX[key]; if(!a)return;
+  try{
+    const c=a.cloneNode(true);
+    c.volume=a.volume;
+    const p=c.play();
+    if(p&&p.catch)p.catch(()=>{});
+  }catch(e){}
+}
+function startBgm(){
+  if(!soundOn)return;
+  const a=SFX.bgm;
+  a.currentTime=0;
+  const p=a.play();
+  if(p&&p.catch)p.catch(()=>{ /* resume on next gesture */ });
+}
+function stopBgm(){
+  try{ SFX.bgm.pause(); SFX.bgm.currentTime=0; }catch(e){}
+}
+function toggleSound(){
+  soundOn=!soundOn;
+  try{ localStorage.setItem('cross_sound', soundOn?'1':'0'); }catch(e){}
+  const btn=document.getElementById('bsnd');
+  if(btn)btn.textContent=soundOn?'🔊':'🔇';
+  if(soundOn){
+    _ensureAC();
+    // Try to resume context (autoplay policy)
+    if(_ac && _ac.state==='suspended')_ac.resume();
+    startBgm();
+  }else{
+    stopBgm();
+  }
+}
 
 /* ═══ state ═══ */
 /* grid/taps/busy/etc. declared in State block above */
@@ -525,6 +588,7 @@ function tap(r,c){
   busy=true;
   if(!cracking){taps++;popSc();if(!tapped){tapped=true;$('bc').classList.add('disabled');}}
   undoStack.push(grid.map(row=>[...row]));$('bu').classList.remove('disabled');
+  playSfx('laser');
   emitSW(r,c);
 
   /* ── compute affected cells ── */
@@ -1165,6 +1229,7 @@ function tryJudge(){
   if(busy||pendingFx)return;
   if(shockwaves.length||rings.length||diamonds.length||parts.length)return;
   var r=pendingResult; pendingResult=null;
+  playSfx('explosion');
   if(r==='win')showWin();
   else if(r==='fail')showFail();
 }
@@ -1185,6 +1250,7 @@ setInterval(function(){
   var rmEl=document.getElementById('rm');
   if(rmEl)rmEl.textContent=rem;
   if(rem>0&&rem<TARGET&&!cracking&&!document.getElementById('stuckBanner')){
+    playSfx('explosion');
     var div=document.createElement('div');
     div.id='stuckBanner';
     div.innerHTML='<div style="background:var(--hdr,#f5ebe0);border:2px solid var(--accent,#b87060);border-radius:16px;padding:32px 40px;text-align:center;max-width:340px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.5)"><div style="font-size:48px;margin-bottom:8px">✗</div><h2 style="font-size:24px;font-weight:300;letter-spacing:4px;margin-bottom:12px">'+t('stuckTitle')+'</h2><p style="font-size:16px;margin-bottom:8px">'+t('stuckMsg',TARGET)+'</p><p style="font-size:14px;color:#8b7e74;margin-bottom:16px">'+t('stuckSub')+'</p><div style="display:flex;gap:12px;justify-content:center"><button id="stuckRetry" style="background:var(--accent,#b87060);color:#fff;border:none;border-radius:10px;padding:12px 24px;font-size:14px;font-weight:bold;cursor:pointer">'+t('restart')+'</button><button id="stuckNew" style="background:var(--cell-empty,rgba(187,173,160,.3));color:var(--txt,#5a4e44);border:1px solid var(--grid,#cdc1b4);border-radius:10px;padding:12px 24px;font-size:14px;font-weight:bold;cursor:pointer">'+t('newGame')+'</button></div></div>';
@@ -1217,10 +1283,14 @@ function startLevel(level){
   $('seedRow').style.display='';
   $('seedBtns').style.display='';
   applyLang();
+  _ensureAC();
+  if(_ac && _ac.state==='suspended')_ac.resume();
+  startBgm();
   newGame();
 }
 function showLauncher(){
   crackStop=true;cracking=false;busy=false;tapped=false;
+  stopBgm();
   $('launcher').classList.remove('hide');
   $('game').style.display='none';
   $('ftr').style.display='none';
@@ -1274,6 +1344,9 @@ function init(){
   $('bt').addEventListener('click',togTheme);
   $('bu').addEventListener('click',undo);
   $('bh').addEventListener('click',showHelp);
+  $('bsnd').addEventListener('click',toggleSound);
+  // Sync sound button icon to persisted preference
+  (function(){ const b=$('bsnd'); if(b)b.textContent=soundOn?'🔊':'🔇'; })();
   $('bCopySeed').addEventListener('click',()=>{
     navigator.clipboard.writeText(curSeed.toString(16).padStart(8,'0')).then(()=>{
       const btn=$('bCopySeed');const old=btn.textContent;btn.style.minWidth=btn.offsetWidth+'px';btn.textContent=t('copied');setTimeout(()=>{btn.textContent=old;btn.style.minWidth='';},1200);

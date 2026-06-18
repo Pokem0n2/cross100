@@ -425,7 +425,11 @@ function _ensureAC(){
 function _decodeBgm(){
   if(_bgmBuffer||!_ac)return;
   fetch('bgm.ogg').then(r=>r.arrayBuffer()).then(buf=>{
-    _ac.decodeAudioData(buf, function(d){ _bgmBuffer=d; }, function(){});
+    _ac.decodeAudioData(buf, function(d){
+      _bgmBuffer=d;
+      // Auto-start once buffer is ready (in case startBgm was called too early)
+      if(soundOn && !_bgmSrc)startBgm();
+    }, function(){});
   }).catch(function(){});
 }
 function playSfx(key){
@@ -443,12 +447,20 @@ function startBgm(){
   if(_bgmSrc)return; // already playing
   _ensureAC();
   if(!_ac||!_bgmBuffer)return;
-  _bgmSrc=_ac.createBufferSource();
-  _bgmSrc.buffer=_bgmBuffer;
-  _bgmSrc.loop=true;
-  if(!_bgmGain){ _bgmGain=_ac.createGain(); _bgmGain.gain.value=0.30; _bgmGain.connect(_ac.destination); }
-  _bgmSrc.connect(_bgmGain);
-  _bgmSrc.start(0);
+  // Ensure AudioContext is running before starting source.
+  // On Android WebView, start() called while context is suspended
+  // may not produce sound even after resume() completes.
+  function _go(){
+    if(_bgmSrc)return;
+    _bgmSrc=_ac.createBufferSource();
+    _bgmSrc.buffer=_bgmBuffer;
+    _bgmSrc.loop=true;
+    if(!_bgmGain){ _bgmGain=_ac.createGain(); _bgmGain.gain.value=0.30; _bgmGain.connect(_ac.destination); }
+    _bgmSrc.connect(_bgmGain);
+    _bgmSrc.start(0);
+  }
+  if(_ac.state === 'running'){ _go(); }
+  else{ _ac.resume().then(_go).catch(_go); }
 }
 function stopBgm(){
   if(_bgmSrc){ try{_bgmSrc.stop(0);}catch(e){} _bgmSrc.disconnect(); _bgmSrc=null; }
@@ -460,11 +472,8 @@ function toggleSound(){
   if(btn)btn.textContent=soundOn?'🔊':'🔇';
   if(soundOn){
     _ensureAC();
-    if(_ac && _ac.state==='suspended')_ac.resume();
     if(!_bgmBuffer)_decodeBgm();
-    // BGM will start once buffer finishes decoding; retry after 200ms
-    if(_bgmBuffer){ startBgm(); }
-    else{ setTimeout(function(){ if(soundOn)startBgm(); },300); }
+    startBgm();
   }else{
     stopBgm();
   }
@@ -1297,10 +1306,8 @@ function startLevel(level){
   $('seedBtns').style.display='';
   applyLang();
   _ensureAC();
-  if(_ac && _ac.state==='suspended')_ac.resume();
   if(!_bgmBuffer)_decodeBgm();
-  if(_bgmBuffer){ startBgm(); }
-  else{ setTimeout(function(){ if(soundOn)startBgm(); },300); }
+  startBgm();
   newGame();
 }
 function showLauncher(){

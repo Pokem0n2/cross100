@@ -407,7 +407,7 @@ SFX.laser.volume=0.75;
 SFX.explosion.volume=0.80;
 for(const k in SFX){ SFX[k].preload='auto'; SFX[k].load(); }
 
-let _bgmEl=null;            // HTMLAudioElement for BGM
+let _bgmA=null,_bgmB=null,_bgmActive=null,_bgmRAF=null;
 
 let soundOn=(function(){ try{ const v=localStorage.getItem('cross_sound'); return v==null?true:v==='1'; }catch(e){ return true; } })();
 
@@ -421,22 +421,42 @@ function playSfx(key){
     if(p&&p.catch)p.catch(()=>{});
   }catch(e){}
 }
+// Ping-pong BGM: two <audio> elements alternate at ~30ms before end.
+// RAF checks at 60fps (16ms precision) for a near-seamless switch.
+function _bgmCheckLoop(){
+  if(!_bgmActive)return;
+  var el=_bgmActive;
+  if(el.duration && el.currentTime >= el.duration-0.03){
+    el.pause();
+    el.currentTime=0;
+    _bgmActive = (el===_bgmA)?_bgmB:_bgmA;
+    _bgmActive.currentTime=0;
+    var p=_bgmActive.play();
+    if(p&&p.catch)p.catch(()=>{});
+  }
+  _bgmRAF=requestAnimationFrame(_bgmCheckLoop);
+}
 function startBgm(){
   if(!soundOn)return;
-  if(!_bgmEl){
-    _bgmEl=new Audio('bgm.ogg');
-    _bgmEl.loop=true;
-    _bgmEl.volume=0.30;
-    _bgmEl.preload='auto';
-    _bgmEl.load();
+  if(!_bgmA){
+    _bgmA=new Audio('bgm.ogg'); _bgmA.volume=0.30; _bgmA.preload='auto'; _bgmA.load();
+    _bgmB=new Audio('bgm.ogg'); _bgmB.volume=0.30; _bgmB.preload='auto'; _bgmB.load();
   }
-  if(_bgmEl.paused){
-    const p=_bgmEl.play();
+  if(!_bgmActive || _bgmActive.paused){
+    _bgmActive=_bgmA;
+    _bgmA.currentTime=0;
+    var p=_bgmA.play();
     if(p&&p.catch)p.catch(()=>{});
+    cancelAnimationFrame(_bgmRAF);
+    _bgmCheckLoop();
   }
 }
 function stopBgm(){
-  if(_bgmEl){ _bgmEl.pause(); _bgmEl.currentTime=0; }
+  if(_bgmRAF)cancelAnimationFrame(_bgmRAF);
+  _bgmRAF=null;
+  if(_bgmA){_bgmA.pause();_bgmA.currentTime=0;}
+  if(_bgmB){_bgmB.pause();_bgmB.currentTime=0;}
+  _bgmActive=null;
 }
 function toggleSound(){
   soundOn=!soundOn;

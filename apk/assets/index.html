@@ -421,28 +421,40 @@ function playSfx(key){
     if(p&&p.catch)p.catch(()=>{});
   }catch(e){}
 }
-// Dual-track BGM: A and B both loop bgm.aac simultaneously.
-// B starts at a half-period offset (T/2) so its silence/re-seek gap
-// never overlaps with A's — each track fills the other's gap.
-// No RAF/setInterval needed; two independent loop=true elements.
-var _bgmActive=null; // non-null when BGM is playing
-var _bgmOffset=0.859; // B's start offset ≈ T/2 (tunable)
+// Dual-track BGM: A and B each restart bgm.aac every period t.
+// B starts at delay d after A. Each track's gap is covered by the other.
+// Timer-based (not loop=true) for precise t and d control.
+var _bgmActive=null;
+var _bgmPeriod=1734; // t: restart period in ms (tunable)
+var _bgmOffset=867;  // d: B's delay after A in ms (tunable)
+var _bgmTimerA=null,_bgmTimerB=null,_bgmTimerBDelay=null;
+function _restartTrack(el){
+  try{ el.currentTime=0; }catch(e){}
+  var p=el.play(); if(p&&p.catch)p.catch(()=>{});
+}
 function startBgm(){
   if(!soundOn)return;
   if(!_bgmA){
-    _bgmA=new Audio('bgm.aac'); _bgmA.loop=true; _bgmA.volume=0.15; _bgmA.preload='auto'; _bgmA.load();
-    _bgmB=new Audio('bgm.aac'); _bgmB.loop=true; _bgmB.volume=0.15; _bgmB.preload='auto'; _bgmB.load();
+    _bgmA=new Audio('bgm.aac'); _bgmA.volume=0.15; _bgmA.preload='auto'; _bgmA.load();
+    _bgmB=new Audio('bgm.aac'); _bgmB.volume=0.15; _bgmB.preload='auto'; _bgmB.load();
   }
   if(!_bgmActive){
-    _bgmA.currentTime=0;
-    var pA=_bgmA.play(); if(pA&&pA.catch)pA.catch(()=>{});
-    // B starts at offset so its gap is always covered by A and vice versa
-    try{_bgmB.currentTime=_bgmOffset;}catch(e){}
-    var pB=_bgmB.play(); if(pB&&pB.catch)pB.catch(()=>{});
+    // Track A: start immediately, restart every t
+    _restartTrack(_bgmA);
+    _bgmTimerA=setInterval(function(){ _restartTrack(_bgmA); },_bgmPeriod);
+    // Track B: start after delay d, then restart every t
+    _bgmTimerBDelay=setTimeout(function(){
+      _restartTrack(_bgmB);
+      _bgmTimerB=setInterval(function(){ _restartTrack(_bgmB); },_bgmPeriod);
+    },_bgmOffset);
     _bgmActive=true;
   }
 }
 function stopBgm(){
+  if(_bgmTimerA)clearInterval(_bgmTimerA);
+  if(_bgmTimerB)clearInterval(_bgmTimerB);
+  if(_bgmTimerBDelay)clearTimeout(_bgmTimerBDelay);
+  _bgmTimerA=_bgmTimerB=_bgmTimerBDelay=null;
   if(_bgmA){_bgmA.pause();_bgmA.currentTime=0;}
   if(_bgmB){_bgmB.pause();_bgmB.currentTime=0;}
   _bgmActive=null;

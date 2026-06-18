@@ -1,22 +1,24 @@
 #!/usr/bin/env bash
 # Build cross100level.apk
 # Requires: ANDROID_HOME set, build-tools 34.0.0, platforms;android-34
-# On aarch64 (e.g. DGX Spark), wraps x86_64 tools with box64.
+# On aarch64 (e.g. DGX Spark), uses box64 for x86_64 aapt2/zipalign/apksigner
+# AND uses java -jar d8.jar explicitly (the d8 bash script can confuse box64)
 set -e
 
 WS="/home/spark/.hermes/kanban/workspaces/t_3407d04c/cross100"
 ANDROID_HOME="${ANDROID_HOME:-$HOME/android-sdk}"
 ANDROID_JAR="$ANDROID_HOME/platforms/android-34/android.jar"
 BT="$ANDROID_HOME/build-tools/34.0.0"
+D8_JAR="$BT/lib/d8.jar"
+APKSIGNER_JAR="$BT/lib/apksigner.jar"
 # Pick host arch
 HOST_ARCH=$(uname -m)
 if [ "$HOST_ARCH" = "x86_64" ]; then
-  X=aapt2; Y=d8; Z=apksigner; W=zipalign; A=aapt
+  X=aapt2; Y="bash $BT/d8"; Z="bash $BT/apksigner"; W=zipalign; A=aapt
 else
-  # aarch64 (or anything else): wrap x86_64 tools with box64
   X="box64 $BT/aapt2"
-  Y="box64 $BT/d8"
-  Z="box64 $BT/apksigner"
+  Y="bash $BT/d8"
+  Z="java -jar $APKSIGNER_JAR"
   W="box64 $BT/zipalign"
   A="box64 $BT/aapt"
 fi
@@ -32,9 +34,11 @@ javac -source 8 -target 8 -bootclasspath "$ANDROID_JAR" \
   -d "$BUILD_DIR/obj" \
   "$APK_DIR/src/com/cross100/game/MainActivity.java"
 
-echo "=== 2. DEX ==="
+echo "=== 2. DEX (with --lib to satisfy android.app.Activity reference) ==="
 $Y --output "$BUILD_DIR/dex" \
   --min-api 21 \
+  --lib "$ANDROID_JAR" \
+  --release \
   "$BUILD_DIR/obj/com/cross100/game/MainActivity.class"
 
 echo "=== 3. aapt2 compile (resources) ==="
@@ -49,13 +53,16 @@ $X link -o "$BUILD_DIR/cross100level.unsigned.apk" \
   -A "$APK_DIR/assets" \
   "$BUILD_DIR/compiled"/*.flat
 
-echo "=== 5. Add DEX to APK ==="
-(cd "$BUILD_DIR" && $A add "cross100level.unsigned.apk" "dex/classes.dex")
+echo "=== 5. Add DEX to APK (must be at root as classes.dex) ==="
+# PROJECT_ISSUES_LOG: dex must be at root with filename 'classes.dex' or
+# Android PackageParser rejects with "INSTALL_PARSE_FAILED_BAD_PACKAGE_NAME / 异常"
+cp "$BUILD_DIR/dex/classes.dex" "$BUILD_DIR/classes.dex"
+(cd "$BUILD_DIR" && $A add "cross100level.unsigned.apk" "classes.dex")
 
 echo "=== 6. zipalign ==="
 $W -f 4 "$BUILD_DIR/cross100level.unsigned.apk" "$BUILD_DIR/cross100level.aligned.apk"
 
-echo "=== 7. Sign with debug.keystore ==="
+echo "=== 7. Sign with debug.keystore (v1 + v2 + v3, v1 needed for legacy installers) ==="
 KS="$HOME/.android/debug.keystore"
 if [ ! -f "$KS" ]; then
   mkdir -p "$HOME/.android"
@@ -66,8 +73,11 @@ if [ ! -f "$KS" ]; then
     -dname "CN=Android Debug,O=Android,C=US"
 fi
 
+# --v1-signing-enabled=true forces JAR/META-INF signing block too
+# (default v2+v3 alone misses it, which some installers reject)
 $Z sign --ks "$KS" \
   --ks-pass pass:android --key-pass pass:android \
+  --v1-signing-enabled true --v2-signing-enabled true --v3-signing-enabled true \
   --out "$BUILD_DIR/cross100level.apk" \
   "$BUILD_DIR/cross100level.aligned.apk"
 

@@ -88,7 +88,7 @@ body{
 }
 
 /* Header */
-header{width:100%;display:flex;flex-direction:column;gap:8px;padding:10px 0}
+header{width:100%;display:flex;flex-direction:column;gap:8px;padding:10px 0;position:relative;z-index:10}
 .hdr-top{display:flex;align-items:center;justify-content:space-between}
 .logo{font-size:22px;font-weight:300;letter-spacing:8px;text-transform:uppercase}
 [data-theme="pixel"] .logo{font-weight:700;letter-spacing:4px;text-shadow:0 0 10px var(--accent)}
@@ -101,33 +101,35 @@ header{width:100%;display:flex;flex-direction:column;gap:8px;padding:10px 0}
 }
 .btn:active{transform:scale(.95)}
 .btn-icon{width:36px;height:36px;padding:0;display:flex;align-items:center;justify-content:center;
-  background:rgba(187,173,160,.3);color:var(--txt);border:1px solid
-  var(--grid);font-size:16px;border-radius:50%;
+  background:rgba(187,173,160,.3);color:var(--txt);border:1px solid var(--grid);font-size:16px;border-radius:50%;
   line-height:1;text-align:center}
-.btn-sm{padding:5px 10px;font-size:11px}
-.btn-back{background:rgba(187,173,160,.3);color:var(--txt);border:1px solid var(--grid)}
+[data-theme="pixel"] .btn-icon{background:rgba(30,30,80,.85)}
+[data-theme="pixel"] .btn{background:#c0392b}
+.btn-icon.disabled{opacity:.35;cursor:default;pointer-events:none}
+.lang-btn{font-family:var(--font);font-size:11px;font-weight:700;letter-spacing:0;padding:4px 8px;
+  background:transparent;color:var(--txt);border:1px solid var(--grid);border-radius:var(--crad);cursor:pointer;line-height:1}
+[data-theme="pixel"] .lang-btn{border-color:rgba(255,255,255,.15)}
 
-.stats{display:flex;gap:24px;padding:4px 0}
-.stat{display:flex;flex-direction:column;align-items:center;gap:2px}
-.stat-l{font-size:10px;color:var(--txt-m);letter-spacing:2px;text-transform:uppercase}
-.stat-v{font-size:22px;font-weight:300;letter-spacing:1px;transition:transform .2s}
-.stat-v.pop{animation:popA .3s ease}
-@keyframes popA{0%{transform:scale(1)}50%{transform:scale(1.3)}100%{transform:scale(1)}}
-
-/* seed row */
-.seed-row{font-size:11px;color:var(--txt-m);text-align:center;padding:2px 0;letter-spacing:1px}
-.seed-btns{display:flex;gap:6px;justify-content:center;padding:4px 0 8px}
-.seed-input,.grid-textarea{
-  font-family:var(--font);width:100%;padding:10px;
-  background:rgba(255,255,255,.4);border:2px solid var(--grid);
-  border-radius:var(--crad);color:var(--txt);font-size:14px;
-  text-align:center;letter-spacing:1px;outline:none;
-  transition:border-color .2s;
+.stats{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:30px}
+.seed-row{text-align:center;font-size:11px;color:var(--txt-m);letter-spacing:.5px;margin-top:4px;font-family:'Courier New',Consolas,monospace}
+.seed-btns{display:flex;justify-content:center;gap:8px;margin-top:6px}
+.btn-sm{font-size:10px;padding:4px 10px;letter-spacing:.5px}
+.seed-input{width:100%;padding:10px 12px;border:1px solid var(--grid);border-radius:var(--crad);font-size:16px;font-family:'Courier New',Consolas,monospace;background:var(--bg1);color:var(--txt);text-align:center;letter-spacing:3px;margin:0 0 16px;outline:none;line-height:1.8;box-sizing:border-box}
+.seed-input:focus{border-color:var(--accent)}
+.grid-textarea{width:100%;padding:8px;border:1px solid var(--grid);border-radius:var(--crad);font-size:11px;font-family:'Courier New',Consolas,monospace;background:var(--bg1);color:var(--txt);resize:none;outline:none;line-height:1.5;box-sizing:border-box;letter-spacing:0}
+.grid-textarea:focus{border-color:var(--accent)}
+.stat{
+  background:var(--cell-empty);border:1px solid var(--grid);
+  border-radius:var(--crad);padding:5px 12px;
+  display:flex;flex-direction:column;align-items:center;min-width:64px;
+  transition:all .4s;
 }
-.seed-input:focus,.grid-textarea:focus{border-color:var(--accent)}
-.grid-textarea{font-family:'Courier New',monospace;font-size:12px;text-align:left;resize:none;min-height:200px}
+.stat-l{font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:var(--txt-m)}
+.stat-v{font-size:20px;font-weight:600;color:var(--txt);transition:transform .2s,color .2s}
+.stat-v.pop{animation:spop .3s ease}
+@keyframes spop{0%{transform:scale(1)}40%{transform:scale(1.25);color:var(--accent)}100%{transform:scale(1)}}
 
-/* Game area */
+/* Grid */
 #game{flex:1;display:flex;align-items:center;justify-content:center;width:100%}
 #gwrap{
   position:relative;width:min(92vw,400px);aspect-ratio:1;
@@ -146,53 +148,95 @@ header{width:100%;display:flex;flex-direction:column;gap:8px;padding:10px 0}
 #grid.n6{--n:6;--gap:6px}
 #grid.n8{--n:8;--gap:5px}
 #grid.n10{--n:10;--gap:4px}
-#cv{position:absolute;inset:0;pointer-events:none}
+[data-theme="pixel"] #grid::after{
+  content:'';position:absolute;inset:0;
+  background:repeating-linear-gradient(0deg,rgba(0,0,0,.08) 0 1px,transparent 1px 3px);
+  pointer-events:none;border-radius:var(--rad);z-index:5;
+}
+
 .cell{
   background:var(--cell-empty);border-radius:var(--crad);
   cursor:pointer;position:relative;
   transition:background-color var(--speed),transform .12s,box-shadow .25s;
   will-change:transform,background-color;
-  display:flex;align-items:center;justify-content:center;
-  font-size:11px;font-weight:700;color:rgba(0,0,0,.35);
 }
-.cell:active{transform:scale(.92)}
-.cell.tap{box-shadow:0 0 24px var(--glow);transform:scale(1.08)}
-.cell.pop{animation:popB .3s ease}
-@keyframes popB{0%{transform:scale(1)}50%{transform:scale(1.15)}100%{transform:scale(1)}}
-.cell.hint{box-shadow:0 0 18px var(--accent);transform:scale(1.1);z-index:2}
-.cell.gone{animation:goneA .4s ease forwards}
-@keyframes goneA{0%{opacity:1;transform:scale(1)}50%{transform:scale(1.2);opacity:.5}100%{opacity:0;transform:scale(.6)}}
+.cell:active{transform:scale(.88)}
 
-#grid.shake{animation:shakeA .12s ease}
-@keyframes shakeA{0%,100%{transform:translateX(0)}25%{transform:translateX(-2px)}75%{transform:translateX(2px)}}
+.cell.tap{animation:tapA .35s ease}
+@keyframes tapA{0%{transform:scale(1)}40%{transform:scale(.82)}100%{transform:scale(1)}}
+.cell.pop{animation:popA .3s ease}
+@keyframes popA{0%{transform:scale(1)}50%{transform:scale(1.15)}100%{transform:scale(1)}}
+.cell.gone{animation:goneA .4s ease-out}
+@keyframes goneA{0%{transform:scale(1);opacity:1}50%{transform:scale(1.3);opacity:.3}100%{transform:scale(1);opacity:1}}
+.cell.hint{
+  box-shadow:0 0 0 3px var(--accent),0 0 20px var(--glow);
+  z-index:10;animation:hintA .7s ease;
+}
+@keyframes hintA{0%{transform:scale(1)}50%{transform:scale(1.18)}100%{transform:scale(1)}}
+
+@keyframes shake{
+  0%,100%{transform:translate(0,0)}
+  20%{transform:translate(-2px,1px)}40%{transform:translate(2px,-1px)}
+  60%{transform:translate(-1px,2px)}80%{transform:translate(1px,-2px)}
+}
+#grid.shake{animation:shake .2s ease}
+
+/* Canvas */
+#cv{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:10}
+
+/* Overlay */
+.ov{
+  position:fixed;inset:0;z-index:100;
+  background:rgba(0,0,0,.65);
+  display:flex;align-items:center;justify-content:center;
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  transition:opacity .4s;
+}
+.ov.hide{opacity:0;pointer-events:none}
+.ov-card{
+  background:var(--hdr);border:1px solid var(--grid);
+  border-radius:var(--rad);padding:32px 40px;text-align:center;
+  box-shadow:0 20px 60px rgba(0,0,0,.3);
+  max-width:340px;width:90%;
+}
+.ov-icon{font-size:48px;margin-bottom:8px}
+.ov-title{font-size:24px;font-weight:300;letter-spacing:4px;margin-bottom:12px}
+[data-theme="pixel"] .ov-title{font-weight:700;text-shadow:0 0 15px var(--accent)}
+.ov-score{font-size:18px;color:var(--txt);margin-bottom:8px}
+.ov-msg{font-size:14px;color:var(--txt-m);margin-bottom:4px}
+.btn-pri{padding:12px 32px;font-size:14px;letter-spacing:2px;margin-top:8px}
 
 /* Footer */
 footer{display:flex;gap:8px;padding:10px 0;justify-content:space-between;width:100%}
-.undo-btn{position:absolute;left:20px;top:50%;transform:translateY(-50%);
-  width:36px;height:36px;border-radius:50%;background:rgba(187,173,160,.3);
-  color:var(--txt);border:1px solid var(--grid);cursor:pointer;
-  display:flex;align-items:center;justify-content:center;font-size:18px;
-  transition:all .2s}
-.undo-btn:active{transform:translateY(-50%) scale(.92)}
-.undo-btn.disabled{opacity:.35;pointer-events:none}
+.undo-btn{position:absolute;left:50%;transform:translateX(-50%);bottom:102px;background:none;border:none;padding:4px;cursor:pointer;color:var(--txt);opacity:.5;transition:opacity .2s;z-index:5}
+.undo-btn:hover,.undo-btn:active{opacity:.8}
+.undo-btn.disabled{opacity:.15;cursor:default;pointer-events:none}
 
-/* Overlays */
-.ov{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100;
+/* Help overlay */
+.help-overlay{
+  position:fixed;inset:0;z-index:200;
+  background:rgba(0,0,0,.55);
   display:flex;align-items:center;justify-content:center;
-  transition:opacity .3s}
-.ov.hide{opacity:0;pointer-events:none}
-.ov-card{background:var(--hdr);border:2px solid var(--accent);border-radius:var(--rad);
-  padding:32px 40px;text-align:center;max-width:340px;width:90%;
-  box-shadow:0 20px 60px rgba(0,0,0,.5)}
-.ov-icon{font-size:48px;margin-bottom:8px}
-.ov-title{font-size:24px;font-weight:300;letter-spacing:4px;margin-bottom:12px}
-.ov-score{font-size:14px;color:var(--txt-m);margin-bottom:8px}
-.ov-msg{font-size:13px;color:var(--txt-m);margin-bottom:16px;line-height:1.4}
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  transition:opacity .4s;
+}
+.help-overlay.hide{opacity:0;pointer-events:none}
+.help-card{
+  background:var(--hdr);border:1px solid var(--grid);
+  border-radius:var(--rad);padding:28px 32px;
+  max-width:360px;width:90%;
+  box-shadow:0 20px 60px rgba(0,0,0,.3);
+  text-align:left;font-size:14px;line-height:1.8;color:var(--txt);
+}
+.help-card h3{text-align:center;font-size:18px;font-weight:300;letter-spacing:4px;margin-bottom:16px;color:var(--accent)}
+[data-theme="pixel"] .help-card h3{font-weight:700;text-shadow:0 0 10px var(--accent)}
+.help-card p{margin-bottom:8px}
+.help-card .help-hint{text-align:center;font-size:12px;color:var(--txt-m);margin-top:12px}
 
 /* Launcher */
 #launcher{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:18px;width:100%;padding:20px 0}
-.launch-title{font-size:32px;font-weight:200;letter-spacing:10px;margin-bottom:20px;text-transform:uppercase}
+  gap:18px;width:100%;padding:20px 0 0;margin-top:-50px}
+.launch-title{font-size:32px;font-weight:200;letter-spacing:10px;margin-bottom:20px;text-transform:uppercase;display:none}
 .launch-sub{font-size:12px;color:var(--txt-m);letter-spacing:3px;margin-bottom:30px;text-transform:uppercase}
 .level-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;width:100%;max-width:360px}
 .level-btn{
@@ -218,24 +262,14 @@ footer{display:flex;gap:8px;padding:10px 0;justify-content:space-between;width:1
 .level-btn .lvl-desc{font-size:11px;color:var(--txt-m);line-height:1.3;max-width:140px}
 [data-theme="pixel"] .level-btn .lvl-name{text-shadow:0 0 8px var(--lvl-color)}
 
-/* Help */
-.help-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;
-  display:flex;align-items:center;justify-content:center;padding:20px}
-.help-card{background:var(--hdr);border:2px solid var(--accent);border-radius:var(--rad);
-  padding:24px;max-width:380px;width:100%;max-height:80vh;overflow-y:auto}
-.help-card h3{font-size:18px;font-weight:300;letter-spacing:3px;margin-bottom:14px;text-align:center}
-.help-card p{font-size:13px;line-height:1.6;margin-bottom:10px;color:var(--txt)}
-.help-hint{font-size:11px;color:var(--txt-m);text-align:center;margin-top:12px;letter-spacing:1px}
-
 .hide{display:none!important}
 </style>
 </head>
 <body>
-
 <div id="app">
   <header id="hdr">
     <div class="hdr-top">
-      <span class="logo">CROSS</span>
+      <span class="logo" id="logo" style="cursor:pointer">CROSS</span>
       <div class="hdr-btns">
         <button class="lang-btn btn-icon" id="blang" style="font-size:11px;font-weight:600;letter-spacing:1px">EN</button>
         <button class="btn-icon" id="bh" title="Help">?</button>
@@ -259,25 +293,25 @@ footer{display:flex;gap:8px;padding:10px 0;justify-content:space-between;width:1
     <div class="launch-sub" data-i18n="selectDifficulty">Select Difficulty</div>
     <div class="level-grid">
       <button class="level-btn" data-level="4" style="--lvl-color:var(--easy)">
-        <div class="lvl-name">EASY</div>
+        <div class="lvl-name" data-i18n="easy">EASY</div>
         <div class="lvl-grid" style="grid-template-columns:repeat(4,1fr)" id="preview4"></div>
-        <div class="lvl-meta">4 × 4 · 4 colors</div>
+        <div class="lvl-meta">4 × 4 · 3 colors</div>
         <div class="lvl-desc" data-i18n="easyDesc">Tap blocks to clear — the entire row and column each drop one color level.</div>
       </button>
       <button class="level-btn" data-level="6" style="--lvl-color:var(--medium)">
-        <div class="lvl-name">MEDIUM</div>
+        <div class="lvl-name" data-i18n="medium">MEDIUM</div>
         <div class="lvl-grid" style="grid-template-columns:repeat(6,1fr)" id="preview6"></div>
-        <div class="lvl-meta">6 × 6 · 6 colors</div>
+        <div class="lvl-meta">6 × 6 · 5 colors</div>
         <div class="lvl-desc" data-i18n="mediumDesc">More cells and colors — same rules, deeper strategy.</div>
       </button>
       <button class="level-btn" data-level="8" style="--lvl-color:var(--hard)">
-        <div class="lvl-name">HARD</div>
+        <div class="lvl-name" data-i18n="hard">HARD</div>
         <div class="lvl-grid" style="grid-template-columns:repeat(8,1fr)" id="preview8"></div>
-        <div class="lvl-meta">8 × 8 · 8 colors</div>
-        <div class="lvl-desc" data-i18n="hardDesc">8 colors. Plan 19 blocks of clear in your final tap.</div>
+        <div class="lvl-meta">8 × 8 · 7 colors</div>
+        <div class="lvl-desc" data-i18n="hardDesc">7 colors. Plan 15 blocks of clear in your final tap.</div>
       </button>
       <button class="level-btn" data-level="10" style="--lvl-color:var(--hell)">
-        <div class="lvl-name">HELL</div>
+        <div class="lvl-name" data-i18n="hell">HELL</div>
         <div class="lvl-grid" style="grid-template-columns:repeat(10,1fr)" id="preview10"></div>
         <div class="lvl-meta">10 × 10 · 9 colors</div>
         <div class="lvl-desc" data-i18n="hellDesc">Full board. Only for the brave.</div>
@@ -291,16 +325,12 @@ footer{display:flex;gap:8px;padding:10px 0;justify-content:space-between;width:1
       <canvas id="cv"></canvas>
     </div>
   </main>
-
   <footer id="ftr" style="display:none">
-    <button class="btn btn-back" id="bBack" data-i18n="backToMenu">MENU</button>
     <button class="btn-icon" id="bt" title="Switch Theme"><svg width="16" height="16" viewBox="0 0 16 16"><polygon points="8,1 15,8 8,15,1,8" fill="currentColor" stroke="none"/></svg></button>
     <button class="btn" id="bn2" data-i18n="newGame">NEW GAME</button>
     <button class="btn-icon disabled" id="bc" title="Show Solution"><svg width="16" height="16" viewBox="0 0 16 16"><polygon points="3,0 16,8 3,16" fill="currentColor" stroke="none"/></svg></button>
   </footer>
-
   <button class="undo-btn disabled" id="bu" style="display:none" title="Undo"><svg width="20" height="20" viewBox="0 0 16 16"><path d="M3 8h7a3 3 0 0 1 0 6H9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 5L3 8l3 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-
   <div class="ov hide" id="ov">
     <div class="ov-card">
       <div class="ov-icon" id="oi">✦</div>
@@ -310,7 +340,6 @@ footer{display:flex;gap:8px;padding:10px 0;justify-content:space-between;width:1
       <button class="btn btn-pri" id="bx" data-i18n="newGame">NEW GAME</button>
     </div>
   </div>
-
   <div class="help-overlay hide" id="seedOv" style="align-items:flex-start;padding-top:15vh">
     <div class="help-card">
       <h3 data-i18n="loadSeedTitle">LOAD SEED</h3>
@@ -320,12 +349,11 @@ footer{display:flex;gap:8px;padding:10px 0;justify-content:space-between;width:1
       <p class="help-hint" data-i18n="tapOutside">Tap outside to close</p>
     </div>
   </div>
-
   <div class="help-overlay hide" id="importOv" style="align-items:flex-start;padding-top:8vh">
     <div class="help-card">
       <h3 data-i18n="importGridTitle">IMPORT GRID</h3>
-      <p style="margin-bottom:8px;color:var(--txt-m);font-size:12px;text-align:center" id="importHint">Paste matrix</p>
-      <textarea class="grid-textarea" id="gridIn" rows="10" spellcheck="false" placeholder="..."></textarea>
+      <p style="margin-bottom:8px;color:var(--txt-m);font-size:12px;text-align:center" data-i18n="importGridHint">Paste N×N number matrix (comma or space separated, -1 for empty)</p>
+      <textarea class="grid-textarea" id="gridIn" rows="10" spellcheck="false" placeholder="3,3,2,7,6,2,3,2,5,2\n1,0,-1,4,3,-1,0,-1,4,-1\n..."></textarea>
       <div style="text-align:center"><button class="btn btn-pri" id="importConfirm" data-i18n="confirm">Confirm</button></div>
       <p class="help-hint" data-i18n="tapOutside">Tap outside to close</p>
     </div>
@@ -360,81 +388,74 @@ const PALETTE=[
 ];
 
 /* ═══ State (current run) ═══ */
-let N=10, MAX=8, TARGET=19, currentLevel=10;
+let N=10, MAX=8, TARGET=TARGET_FN(N), currentLevel=10;
 let grid=[],taps=0,busy=false,theme='valley',lang='en',lastGray=0,sol=[],cracking=false,crackStop=false,initGrid=null,tapped=false,undoStack=[],curSeed=0;
 
-/* ═══ i18n ═══ */
+/* ═══ state ═══ */
+/* grid/taps/busy/etc. declared in State block above */
 const T={
   en:{
+    easy:'EASY',medium:'MEDIUM',hard:'HARD',hell:'HELL',
     taps:'Taps',left:'Left',seed:'seed',loadSeed:'Load Seed',importMatrix:'Import Matrix',
-    copySeed:'Copy Seed',newGame:'NEW GAME',confirm:'Confirm',backToMenu:'MENU',
-    selectDifficulty:'SELECT DIFFICULTY',
+    selectDifficulty:'Select Difficulty',
     easyDesc:'Tap blocks to clear — the entire row and column each drop one color level.',
     mediumDesc:'More cells and colors — same rules, deeper strategy.',
-    hardDesc:'8 colors. Plan 19 blocks of clear in your final tap.',
+    hardDesc:'7 colors. Plan 15 blocks of clear in your final tap.',
     hellDesc:'Full board. Only for the brave.',
+    copySeed:'Copy Seed',newGame:'NEW GAME',confirm:'Confirm',
     helpTitle:'HOW TO PLAY',
-    helpGoal:'<b>Goal:</b> On your final tap, clear exactly <b>{n}</b> gray blocks to win.',
-    helpOp:'<b>How:</b> Tap any block — its entire <b>row + column</b> each drop one color level. Empty blocks are unaffected.',
-    helpColors:'<b>Colors:</b> Black → Purple → Blue → Cyan → Green → Yellow → Orange → Red → Gray → Empty',
-    helpScore:'<b>Score:</b> Fewer taps is better.',
+    helpGoal:'<b>Goal:</b><br>On your final tap, clear exactly <b>{n}</b> gray blocks to win.',
+    helpOp:'<b>How:</b><br>Tap any block — its entire <b>row + column</b> each drop one color level. Empty blocks are unaffected.',
+    helpColors:'<b>Colors:</b><br>Black → Purple → Blue → Cyan → Green → Yellow → Orange → Red → Gray → Empty',
+    helpScore:'<b>Score:</b><br>Fewer taps is better.',
     helpClose:'Tap anywhere to close',
     loadSeedTitle:'LOAD SEED',loadSeedHint:'Enter seed ID to load a level',
-    importGridTitle:'IMPORT GRID',importGridHint:'Paste matrix (comma or space separated, -1 for empty)',
+    importGridTitle:'IMPORT GRID',importGridHint:'Paste 10×10 number matrix (comma or space separated, -1 for empty)',
     tapOutside:'Tap outside to close',
     copied:'Copied !',
     winTitle:'CLEARED!',winMsg:'Cleared exactly {n} gray blocks!',
     failTitle:'ALMOST!',failMsg:'Need to clear exactly {n} gray blocks in the final move',
     failCleared:'Cleared {n} gray',retry:'RETRY',
-    stuckTitle:'FAILED',stuckMsg:'Remaining {n} blocks < {target}',stuckSub:'Cannot win this round',
+    stuckTitle:'FAILED',stuckMsg:'Remaining {n} blocks < {n}',stuckSub:'Cannot win this round',
     restart:'RESTART',showSolution:'Show Solution',switchTheme:'Switch Theme',
     undo:'Undo',help:'Help'
   },
   cn:{
+    easy:'简单',medium:'中级',hard:'困难',hell:'地狱',
     taps:'点击',left:'剩余',seed:'种子',loadSeed:'加载种子',importMatrix:'导入网格',
-    copySeed:'复制种子',newGame:'新游戏',confirm:'确认',backToMenu:'菜单',
     selectDifficulty:'选择难度',
-    easyDesc:'点击方块，该行该列各降一级颜色，最后一击需恰好消除指定数量。',
-    mediumDesc:'6×6 网格，6 种颜色。规划点击顺序使最后一击恰好消除 11 块。',
-    hardDesc:'8×8 网格，8 种颜色。计划最后一击清除 15 个灰色方块。',
-    hellDesc:'10×10 完整棋盘，9 种颜色。仅限勇敢者。',
+    easyDesc:'点击方块消除——整行整列各降一个颜色等级。',
+    mediumDesc:'更多格子与颜色——规则相同，策略更深。',
+    hardDesc:'7种颜色。最后一次点击需消除15个灰色方块。',
+    hellDesc:'完整棋盘。勇者专属。',
+    copySeed:'复制种子',newGame:'新游戏',confirm:'确认',
     helpTitle:'游戏规则',
-    helpGoal:'<b>目标：</b>最后一次点击恰好消除 <b>{n}</b> 个灰色方块即可通关。',
-    helpOp:'<b>操作：</b>点击任意色块，该色块所在的 <b>整行 + 整列</b> 所有色块颜色各降一级。无色块不受影响。',
-    helpColors:'<b>颜色等级：</b>黑 → 紫 → 蓝 → 青 → 绿 → 黄 → 橙 → 红 → 灰 → 无色（消除）',
-    helpScore:'<b>得分：</b>点击次数越少越好。',
+    helpGoal:'<b>目标：</b><br>最后一次点击恰好消除 <b>{n}</b> 个灰色方块即可通关。',
+    helpOp:'<b>操作：</b><br>点击任意色块，该色块所在的 <b>整行 + 整列</b> 所有色块颜色各降一级。无色块不受影响。',
+    helpColors:'<b>颜色等级：</b><br>黑 → 紫 → 蓝 → 青 → 绿 → 黄 → 橙 → 红 → 灰 → 无色（消除）',
+    helpScore:'<b>得分：</b><br>点击次数越少越好。',
     helpClose:'点击任意位置关闭',
     loadSeedTitle:'加载种子',loadSeedHint:'输入种子ID加载指定关卡',
-    importGridTitle:'导入网格',importGridHint:'粘贴矩阵（逗号或空格分隔，-1为空）',
+    importGridTitle:'导入网格',importGridHint:'粘贴10×10数字矩阵（逗号或空格分隔，-1为空）',
     tapOutside:'点击遮罩关闭',
     copied:'已复制 !',
     winTitle:'通关！',winMsg:'成功消除 {n} 个灰色方块！',
     failTitle:'差一点！',failMsg:'最后一次点击需要恰好消除 {n} 个灰色方块',
     failCleared:'消除了 {n} 个灰色',retry:'重试',
-    stuckTitle:'失败',stuckMsg:'剩余 {n} 个方块 < {target}',stuckSub:'本局无法获胜',
+    stuckTitle:'失败',stuckMsg:'剩余 {n} 个方块 < {n}',stuckSub:'本局无法获胜',
     restart:'重新开始',showSolution:'演示解法',switchTheme:'切换主题',
     undo:'撤销',help:'帮助'
   }
 };
-function t(key,n){
-  let s=T[lang][key]||T.en[key]||key;
-  if(n!=null)s=s.replace('{n}',n);
-  s=s.replace('{target}',TARGET);
-  return s;
-}
+function t(key,n){let s=T[lang][key]||T.en[key]||key;if(n!=null)s=s.replace('{n}',n);return s}
 function applyLang(){
   document.documentElement.lang=lang==='cn'?'zh':'en';
   $('blang').textContent=lang==='cn'?'CN':'EN';
-  document.querySelectorAll('[data-i18n]').forEach(el=>{
-    const k=el.dataset.i18n;
-    if(T[lang][k])el.textContent=T[lang][k];
-  });
+  document.querySelectorAll('[data-i18n]').forEach(el=>{const k=el.dataset.i18n;if(T[lang][k])el.textContent=T[lang][k]});
   $('bh').title=t('help');
   $('bt').title=t('switchTheme');
   $('bc').title=t('showSolution');
   $('bu').title=t('undo');
-  const hint=document.getElementById('importHint');
-  if(hint)hint.textContent=t('importGridHint')+(N?' ('+N+'×'+N+')':'');
 }
 const SVG_DIAMOND='<svg width="16" height="16" viewBox="0 0 16 16"><polygon points="8,1 15,8 8,15 1,8" fill="currentColor" stroke="none"/></svg>';
 const SVG_SQUARE='<svg width="14" height="14" viewBox="0 0 14 14"><rect x="1" y="1" width="12" height="12" fill="currentColor" stroke="none"/></svg>';
@@ -448,14 +469,14 @@ const $g=$('grid'),$sc=$('sc'),
 function $(id){return document.getElementById(id)}
 
 /* ═══ persistence ═══ */
-function load(){try{const d=JSON.parse(localStorage.getItem('cross')||'{}');theme=d.t||'valley';lang=d.l||'en';currentLevel=d.lv||10}catch(e){}}
-function save(){try{localStorage.setItem('cross',JSON.stringify({t:theme,l:lang,lv:currentLevel}))}catch(e){}}
+function load(){try{const d=JSON.parse(localStorage.getItem('cross')||'{}');theme=d.t||'valley';lang=d.l||'en'}catch(e){}}
+function save(){try{localStorage.setItem('cross',JSON.stringify({t:theme,l:lang}))}catch(e){}}
 
 /* ═══ seed / PRNG ═══ */
 function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t^=t+Math.imul(t^t>>>7,61|t);return((t^t>>>14)>>>0)/4294967296}}
 function showSeed(){$('seedVal').textContent=curSeed.toString(16).padStart(8,'0')}
 
-/* ═══ Level gen (stacking) — uses current N & MAX ═══ */
+/* ═══ level gen (stacking) — uses current N & MAX ═══ */
 function gen(seed){
   const rng=seed!=null?mulberry32(seed):Math.random;
   const g=[],seq=[];
@@ -478,7 +499,6 @@ function cellColor(v){
 }
 function render(){
   $g.innerHTML='';
-  $g.className='n'+N;
   for(let r=0;r<N;r++)for(let c=0;c<N;c++){
     const d=document.createElement('div');
     d.className='cell';
@@ -488,6 +508,7 @@ function render(){
     d.addEventListener('click',()=>tap(r,c));
     $g.appendChild(d);
   }
+  resizeCv();
 }
 function upd(r,c){
   const el=$g.children[r*N+c];
@@ -511,6 +532,7 @@ function tap(r,c){
   const tapEl=$g.children[r*N+c];
   if(tapEl){tapEl.classList.add('tap');setTimeout(()=>tapEl.classList.remove('tap'),350)}
 
+  /* ── grid update + gray count (sync) ── */
   const gone=[];
   const grayClr=[];
   for(const cell of aff){
@@ -520,6 +542,7 @@ function tap(r,c){
     if(grid[cell.r][cell.c]===-1)gone.push({r:cell.r,c:cell.c});
   }
 
+  /* ── win/fail check (immediate, data already correct) ── */
   if(!cracking){
     const gc=grayClr.length;
     lastGray=gc;
@@ -528,6 +551,7 @@ function tap(r,c){
     else if(res==='fail')setTimeout(showFail,450);
   }
 
+  /* ── animations (visual only, no grid mutation) ── */
   let mx=0;
   for(const cell of aff){
     mx=Math.max(mx,cell.d);
@@ -551,7 +575,7 @@ function tap(r,c){
 
 function chkGray(gc){
   let rem=0;
-  for(let r=0;r<N;r++)for(let c=0;c<N;c++)if(grid[r][c]===0)rem++;
+  for(let r=0;r<N;r++)for(let c=0;c<N;c++)if(grid[r][c]>=0)rem++;
   if(rem===0&&gc===TARGET)return 'win';
   if(rem===0&&gc!==TARGET)return 'fail';
   return 'continue';
@@ -593,39 +617,37 @@ function showFail(){
   $ov.classList.remove('hide');
 }
 function showStuck(){
-  const rem=updRem();
   const ov=document.getElementById('ov');
   const ot=document.getElementById('ot');
   const oi=document.getElementById('oi');
   const fs=document.getElementById('fs');
   const om=document.getElementById('om');
   const bx=document.getElementById('bx');
-  if(ot)ot.textContent=t('stuckTitle');
+  if(ot)ot.textContent='FAILED';
   if(oi)oi.textContent='✗';
   if(fs)fs.textContent='';
-  if(om)om.textContent='Remaining '+rem+' < '+TARGET+', no valid solution.';
-  if(bx){bx.textContent=t('restart');bx.dataset.action='retry';}
+  if(om)om.textContent=`Remaining < ${TARGET}, no valid solution.`;
+  if(bx){bx.textContent='RESTART';bx.dataset.action='retry';}
   if(ov)ov.classList.remove('hide');
 }
 
-/* ═══ Universal solver (parameterized by N, MAX, TARGET) ═══ */
+/* ═══ universal solver ═══ */
 function universalSolver(g){
   const n=N;
-  const target=TARGET;
-  // D[i][j] = required decrement
+  /* D[i][j] = required decrement for cell (i,j) */
   const D=[];let T=0;
   for(let i=0;i<n;i++){D[i]=[];for(let j=0;j<n;j++){D[i][j]=g[i][j]>=0?g[i][j]+1:0;T+=D[i][j]}}
-  if(T%target!==0)return null;
-  const S=T/target;
-  // A[i]=row taps, B[j]=col taps
-  // (sum of D in row i) - S = A[i] * (n-1)
-  const denom=n-1;
+  if(T%TARGET!==0)return null;
+  const S=T/TARGET;
+  /* row/col sums of D */
   const Di=[],Ej=[];
   for(let i=0;i<n;i++){Di[i]=0;for(let j=0;j<n;j++)Di[i]+=D[i][j]}
   for(let j=0;j<n;j++){Ej[j]=0;for(let i=0;i<n;i++)Ej[j]+=D[i][j]}
+  /* A[i]=row taps, B[j]=col taps */
   const A=[],B=[];
-  for(let i=0;i<n;i++){A[i]=(Di[i]-S)/denom;if(A[i]<0||A[i]!==Math.round(A[i]))return null}
-  for(let j=0;j<n;j++){B[j]=(Ej[j]-S)/denom;if(B[j]<0||B[j]!==Math.round(B[j]))return null}
+  for(let i=0;i<n;i++){A[i]=(Di[i]-S)/9;if(A[i]<0||A[i]!==Math.round(A[i]))return null}
+  for(let j=0;j<n;j++){B[j]=(Ej[j]-S)/9;if(B[j]<0||B[j]!==Math.round(B[j]))return null}
+  /* Z[i][j]=taps at (i,j) */
   const taps=[];
   for(let i=0;i<n;i++)for(let j=0;j<n;j++){
     const z=A[i]+B[j]-D[i][j];
@@ -633,6 +655,7 @@ function universalSolver(g){
     if(g[i][j]<0&&z!==0)return null;
     for(let k=0;k<z;k++)taps.push({r:i,c:j});
   }
+  /* schedule taps: greedy by descending cell value */
   taps.sort((a,b)=>g[b.r][b.c]-g[a.r][a.c]);
   const gc=g.map(row=>[...row]);
   const seq=[];const used=new Set();
@@ -640,19 +663,19 @@ function universalSolver(g){
     let found=false;
     for(let idx=0;idx<taps.length;idx++){
       if(used.has(idx))continue;
-      const tt=taps[idx];
-      if(gc[tt.r][tt.c]<0)continue;
+      const t=taps[idx];
+      if(gc[t.r][t.c]<0)continue;
       let ok=true;
       for(let k=0;k<n;k++){
-        if(gc[tt.r][k]>=0&&gc[tt.r][k]-1<-1){ok=false;break}
-        if(k!==tt.r&&gc[k][tt.c]>=0&&gc[k][tt.c]-1<-1){ok=false;break}
+        if(gc[t.r][k]>=0&&gc[t.r][k]-1<-1){ok=false;break}
+        if(k!==t.r&&gc[k][t.c]>=0&&gc[k][t.c]-1<-1){ok=false;break}
       }
       if(!ok)continue;
       for(let k=0;k<n;k++){
-        if(gc[tt.r][k]>=0)gc[tt.r][k]--;
-        if(k!==tt.r&&gc[k][tt.c]>=0)gc[k][tt.c]--;
+        if(gc[t.r][k]>=0)gc[t.r][k]--;
+        if(k!==t.r&&gc[k][t.c]>=0)gc[k][t.c]--;
       }
-      seq.push({r:tt.r,c:tt.c});used.add(idx);found=true;break;
+      seq.push({r:t.r,c:t.c});used.add(idx);found=true;break;
     }
     if(!found)return null;
   }
@@ -662,6 +685,7 @@ function universalSolver(g){
 /* ═══ crack ═══ */
 function crack(){
   if(busy||(!sol.length&&!grid)||tapped)return;
+  /* if no precomputed solution, run universal solver */
   if(!sol.length){
     sol=universalSolver(grid);
     if(!sol){alert('No solution found for this grid.');return}
@@ -730,6 +754,7 @@ function restartLevel(){
 }
 function undo(){
   if(busy||!undoStack.length)return;
+  // Close overlay if showing
   $ov.classList.add('hide');
   grid=undoStack.pop();
   taps=Math.max(0,taps-1);
@@ -781,10 +806,12 @@ function togTheme(){
   save();
 }
 function showHelp(){
+  const inLauncher=getComputedStyle($('launcher')).display!=='none';
+  const goalN=inLauncher?'2n-1':TARGET;
   const ov=document.createElement('div');
   ov.className='help-overlay';
   ov.innerHTML='<div class="help-card"><h3>'+t('helpTitle')+'</h3>'
-    +'<p>'+t('helpGoal',TARGET)+'</p>'
+    +'<p>'+t('helpGoal',goalN)+'</p>'
     +'<p>'+t('helpOp')+'</p>'
     +'<p>'+t('helpColors')+'</p>'
     +'<p>'+t('helpScore')+'</p>'
@@ -793,59 +820,10 @@ function showHelp(){
   document.body.appendChild(ov);
 }
 
-/* ═══ Level selection & launcher ═══ */
-function startLevel(level){
-  const cfg=LEVELS[level];
-  if(!cfg)return;
-  N=cfg.n;MAX=cfg.max;TARGET=TARGET_FN(N);
-  currentLevel=level;
-  save();
-  // Switch UI: hide launcher, show game UI
-  $('launcher').classList.add('hide');
-  $('game').style.display='';
-  $('ftr').style.display='';
-  $('bu').style.display='';
-  $('statsRow').style.display='';
-  $('seedRow').style.display='';
-  $('seedBtns').style.display='';
-  applyLang();
-  newGame();
-}
-function backToLauncher(){
-  crackStop=true;cracking=false;busy=false;tapped=false;
-  $('launcher').classList.remove('hide');
-  $('game').style.display='none';
-  $('ftr').style.display='none';
-  $('bu').style.display='none';
-  $('statsRow').style.display='none';
-  $('seedRow').style.display='none';
-  $('seedBtns').style.display='none';
-  $ov.classList.add('hide');
-  try{var sb=document.getElementById('stuckBanner');if(sb)sb.remove();}catch(e){}
-}
-
-/* Build the level preview tiles (sample visual) */
-function buildPreviews(){
-  for(const lvl of [4,6,8,10]){
-    const el=document.getElementById('preview'+lvl);
-    if(!el)continue;
-    el.innerHTML='';
-    // Show a simple color gradient sample
-    const total=lvl*lvl;
-    for(let i=0;i<total;i++){
-      const d=document.createElement('div');
-      // Simple deterministic coloring for preview
-      const v=((i*7+i/lvl|0)*3)%LEVELS[lvl].max;
-      d.style.background=PALETTE[v].v;
-      d.style.opacity=0.4+(v/LEVELS[lvl].max)*0.6;
-      el.appendChild(d);
-    }
-  }
-}
-
 /* ═══ particles ═══ */
 let parts=[];
 let shockwaves=[];
+let rings=[];
 function resizeCv(){const w=$('gwrap');$cv.width=w.offsetWidth;$cv.height=w.offsetHeight}
 
 function emit(r,c){
@@ -853,21 +831,40 @@ function emit(r,c){
   const cr=el.getBoundingClientRect(),cvr=$cv.getBoundingClientRect();
   const x=cr.left-cvr.left+cr.width/2, y=cr.top-cvr.top+cr.height/2;
   const cols=theme==='valley'
-    ?['#f5ebe0','#eddecf','#cdc1b4','#b87060','#c8b860','#6baa9f']
-    :['#ffd700','#ff6b6b','#4ecdc4','#a855f7','#3498db','#2ecc71'];
-  for(let i=0;i<10;i++){
-    const a=Math.PI*2*i/10+Math.random()*.4;
-    const sp=1.2+Math.random()*2.5;
+    ?['#f5ebe0','#eddecf','#cdc1b4','#b87060','#c8b860','#6baa9f','#d4a373','#a98467']
+    :['#ffd700','#ff6b6b','#4ecdc4','#a855f7','#3498db','#2ecc71','#ff8c00','#ffffff'];
+  // Burst of 32 particles (up from 10): wide cone + slow drifting sparks
+  for(let i=0;i<24;i++){
+    const a=Math.PI*2*i/24+Math.random()*.6;
+    const sp=1.8+Math.random()*4;
     parts.push({
       x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,
-      sz:theme==='valley'?2.5+Math.random()*3.5:1.5+Math.random()*2.5,
+      sz:theme==='valley'?3+Math.random()*5:2+Math.random()*4,
       c:cols[Math.floor(Math.random()*cols.length)],
-      life:1,dec:.015+Math.random()*.02,
-      sq:theme==='pixel'
+      life:1,dec:.01+Math.random()*.015,
+      sq:theme==='pixel',
+      trail:[]
     });
   }
+  // White-hot inner sparks (intense bright dots near origin)
+  for(let i=0;i<10;i++){
+    const a=Math.random()*Math.PI*2;
+    const sp=0.4+Math.random()*1.8;
+    parts.push({
+      x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,
+      sz:1.5+Math.random()*2.5,
+      c:'#fff',
+      life:1,dec:.035+Math.random()*.025,
+      sq:false,trail:[]
+    });
+  }
+  // Expanding rings (3 concentric for rich explosion feel)
+  rings.push({x,y,r:0,life:1,col:theme==='pixel'?'#ffd700':'#b87060',w:3});
+  rings.push({x,y,r:0,life:1,col:theme==='pixel'?'#ff6b6b':'#d4a373',w:1.5,delay:4});
+  rings.push({x,y,r:0,life:1,col:'#fff',w:0.8,delay:8});
 }
 
+/* ═══ shockwave ═══ */
 function emitSW(r,c){
   const el=$g.children[r*N+c];if(!el)return;
   const cr=el.getBoundingClientRect(),cvr=$cv.getBoundingClientRect();
@@ -888,22 +885,41 @@ function tickSW(){
     const len=Math.min(s.pos,$cv.width);
     const lx=s.x+s.dx*len, ly=s.y+s.dy*len;
     ctx.save();
+    // Outer glow trail
     ctx.strokeStyle=s.col;
-    ctx.lineWidth=3+s.life*4;
-    ctx.globalAlpha=s.life*.35;
+    ctx.lineWidth=5+s.life*6;
+    ctx.globalAlpha=s.life*0.25;
     ctx.lineCap='round';
     ctx.shadowColor=s.col;
+    ctx.shadowBlur=20*s.life;
+    ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.lineTo(lx,ly);ctx.stroke();
+    // Mid beam
+    ctx.lineWidth=2.5+s.life*3;
+    ctx.globalAlpha=s.life*0.5;
     ctx.shadowBlur=12*s.life;
     ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.lineTo(lx,ly);ctx.stroke();
-    ctx.lineWidth=1.5+s.life*1.5;
-    ctx.globalAlpha=s.life*.7;
-    ctx.shadowBlur=6*s.life;
-    ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.lineTo(hx,hy);ctx.stroke();
-    ctx.globalAlpha=s.life;
-    ctx.shadowBlur=16*s.life;
+    // Bright core beam
+    ctx.lineWidth=1.2+s.life*1.5;
+    ctx.globalAlpha=s.life*0.85;
+    ctx.strokeStyle='#fff';
+    ctx.shadowColor='#fff';
+    ctx.shadowBlur=8*s.life;
+    ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.lineTo(lx,ly);ctx.stroke();
+    // Head halo (outer)
+    ctx.globalAlpha=s.life*0.7;
+    ctx.shadowColor=s.col;
+    ctx.shadowBlur=18*s.life;
     ctx.fillStyle=s.col;
-    ctx.beginPath();ctx.arc(hx,hy,3+s.life*4,0,Math.PI*2);ctx.fill();
-    ctx.globalAlpha=s.life*.9;
+    ctx.beginPath();ctx.arc(hx,hy,4+s.life*5,0,Math.PI*2);ctx.fill();
+    // Head halo (bright)
+    ctx.globalAlpha=s.life;
+    ctx.shadowColor='#fff';
+    ctx.shadowBlur=20*s.life;
+    ctx.fillStyle=s.col;
+    ctx.beginPath();ctx.arc(hx,hy,2.5+s.life*3,0,Math.PI*2);ctx.fill();
+    // Head center
+    ctx.globalAlpha=s.life;
+    ctx.shadowBlur=10*s.life;
     ctx.fillStyle='#fff';
     ctx.beginPath();ctx.arc(hx,hy,1.5+s.life*2,0,Math.PI*2);ctx.fill();
     ctx.restore();
@@ -913,29 +929,70 @@ function tickSW(){
 function tickParts(){
   ctx.clearRect(0,0,$cv.width,$cv.height);
   tickSW();
+  // Expanding rings
+  for(let i=rings.length-1;i>=0;i--){
+    const r=rings[i];
+    if(r.delay>0){r.delay--;continue}
+    r.r+=2.8;r.life-=.022;
+    if(r.life<=0){rings.splice(i,1);continue}
+    ctx.save();
+    ctx.strokeStyle=r.col;
+    ctx.lineWidth=(r.w||2)+r.life*3;
+    ctx.globalAlpha=r.life*0.7;
+    ctx.shadowColor=r.col;
+    ctx.shadowBlur=12*r.life;
+    ctx.beginPath();
+    ctx.arc(r.x,r.y,r.r,0,Math.PI*2);
+    ctx.stroke();
+    ctx.restore();
+  }
   for(let i=parts.length-1;i>=0;i--){
     const p=parts[i];
+    // Save trail position
+    if(p.trail && Math.random()>.4){
+      p.trail.push({x:p.x,y:p.y});
+      if(p.trail.length>4)p.trail.shift();
+    }
     p.x+=p.vx;p.y+=p.vy;p.vy+=.06;p.life-=p.dec;
     if(p.life<=0){parts.splice(i,1);continue}
+    // Draw trail
+    if(p.trail && p.trail.length>1){
+      ctx.save();
+      ctx.strokeStyle=p.c;
+      ctx.lineWidth=p.sz*0.7;
+      ctx.lineCap='round';
+      for(let j=1;j<p.trail.length;j++){
+        ctx.globalAlpha=(j/p.trail.length)*p.life*0.5;
+        ctx.beginPath();
+        ctx.moveTo(p.trail[j-1].x,p.trail[j-1].y);
+        ctx.lineTo(p.trail[j].x,p.trail[j].y);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
     ctx.globalAlpha=p.life;ctx.fillStyle=p.c;
+    // Glow
+    ctx.save();
+    ctx.shadowColor=p.c;
+    ctx.shadowBlur=8*p.life;
     if(p.sq)ctx.fillRect(p.x-p.sz/2,p.y-p.sz/2,p.sz,p.sz);
     else{ctx.beginPath();ctx.arc(p.x,p.y,p.sz,0,Math.PI*2);ctx.fill()}
+    ctx.restore();
   }
   ctx.globalAlpha=1;
   requestAnimationFrame(tickParts);
 }
 
-/* ═══ watchdog (stuck detection) ═══ */
+/* ═══ watchdog ═══ */
 setInterval(function(){
-  if(!grid.length)return;
   var rem=0;
   for(var r=0;r<N;r++)for(var c=0;c<N;c++)if(grid[r][c]>=0)rem++;
   var rmEl=document.getElementById('rm');
   if(rmEl)rmEl.textContent=rem;
-  if(rem>0&&rem<TARGET&&!cracking&&!document.getElementById('stuckBanner')&&!document.getElementById('launcher').classList.contains('hide')===false){
+  if(rem>0&&rem<TARGET&&!cracking&&!document.getElementById('stuckBanner')){
     var div=document.createElement('div');
     div.id='stuckBanner';
-    div.innerHTML='<div style="background:var(--hdr,#f5ebe0);border:2px solid var(--accent,#b87060);border-radius:16px;padding:32px 40px;text-align:center;max-width:340px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.5)"><div style="font-size:48px;margin-bottom:8px">✗</div><h2 style="font-size:24px;font-weight:300;letter-spacing:4px;margin-bottom:12px">'+t('stuckTitle')+'</h2><p style="font-size:16px;margin-bottom:8px">'+t('stuckMsg',rem)+'</p><p style="font-size:14px;color:#8b7e74;margin-bottom:16px">'+t('stuckSub')+'</p><div style="display:flex;gap:12px;justify-content:center"><button id="stuckRetry" style="background:var(--accent,#b87060);color:#fff;border:none;border-radius:10px;padding:12px 24px;font-size:14px;font-weight:bold;cursor:pointer">'+t('restart')+'</button><button id="stuckNew" style="background:var(--cell-empty,rgba(187,173,160,.3));color:var(--txt,#5a4e44);border:1px solid var(--grid,#cdc1b4);border-radius:10px;padding:12px 24px;font-size:14px;font-weight:bold;cursor:pointer">'+t('newGame')+'</button></div></div>';
+    div.innerHTML='<div style="background:var(--hdr,#f5ebe0);border:2px solid var(--accent,#b87060);border-radius:16px;padding:32px 40px;text-align:center;max-width:340px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.5)"><div style="font-size:48px;margin-bottom:8px">✗</div><h2 style="font-size:24px;font-weight:300;letter-spacing:4px;margin-bottom:12px">'+t('stuckTitle')+'</h2><p style="font-size:16px;margin-bottom:8px">'+t('stuckMsg',TARGET)+'</p><p style="font-size:14px;color:#8b7e74;margin-bottom:16px">'+t('stuckSub')+'</p><div style="display:flex;gap:12px;justify-content:center"><button id="stuckRetry" style="background:var(--accent,#b87060);color:#fff;border:none;border-radius:10px;padding:12px 24px;font-size:14px;font-weight:bold;cursor:pointer">'+t('restart')+'</button><button id="stuckNew" style="background:var(--cell-empty,rgba(187,173,160,.3));color:var(--txt,#5a4e44);border:1px solid var(--grid,#cdc1b4);border-radius:10px;padding:12px 24px;font-size:14px;font-weight:bold;cursor:pointer">'+t('newGame')+'</button></div></div>';
     div.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;z-index:99999;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;';
     document.body.appendChild(div);
     document.getElementById('stuckRetry').onclick=function(){
@@ -949,26 +1006,73 @@ setInterval(function(){
   }
 },300);
 
-/* ═══ init ═══ */
-function init(){
-  load();
-  document.documentElement.dataset.theme=theme;
-  $('bt').innerHTML=theme==='valley'?SVG_DIAMOND:SVG_SQUARE;
-  buildPreviews();
-  resizeCv();window.addEventListener('resize',resizeCv);
-  tickParts();applyLang();
-
-  // Launcher level buttons
+/* ═══ Level selection & launcher ═══ */
+function startLevel(level){
+  const cfg=LEVELS[level];
+  if(!cfg)return;
+  N=cfg.n;MAX=cfg.max;TARGET=TARGET_FN(N);
+  currentLevel=level;
+  $g.className='n'+N;
+  // Hide launcher, show game UI (inline style like original HTML)
+  $('launcher').classList.add('hide');
+  $('game').style.display='';
+  $('ftr').style.display='';
+  $('bu').style.display='';
+  $('statsRow').style.display='';
+  $('seedRow').style.display='';
+  $('seedBtns').style.display='';
+  applyLang();
+  newGame();
+}
+function showLauncher(){
+  crackStop=true;cracking=false;busy=false;tapped=false;
+  $('launcher').classList.remove('hide');
+  $('game').style.display='none';
+  $('ftr').style.display='none';
+  $('bu').style.display='none';
+  $('statsRow').style.display='none';
+  $('seedRow').style.display='none';
+  $('seedBtns').style.display='none';
+}
+/* Build the level preview tiles (sample visual) */
+function buildPreviews(){
+  for(const lvl of [4,6,8,10]){
+    const el=document.getElementById('preview'+lvl);
+    if(!el)continue;
+    el.innerHTML='';
+    const total=lvl*lvl;
+    for(let i=0;i<total;i++){
+      const d=document.createElement('div');
+      // Simple deterministic coloring for preview
+      const v=((i*7+(i/lvl|0))*3)%LEVELS[lvl].max;
+      d.style.background=PALETTE[v].v;
+      d.style.opacity=0.4+(v/LEVELS[lvl].max)*0.6;
+      el.appendChild(d);
+    }
+  }
   document.querySelectorAll('.level-btn').forEach(btn=>{
     btn.addEventListener('click',()=>{
       const lv=parseInt(btn.dataset.level,10);
       startLevel(lv);
     });
   });
+}
 
-  // Back to menu
-  $('bBack').addEventListener('click',backToLauncher);
-
+/* ═══ init ═══ */
+function init(){
+  buildPreviews();
+  load();
+  document.documentElement.dataset.theme=theme;
+  $('bt').innerHTML=theme==='valley'?SVG_DIAMOND:SVG_SQUARE;
+  resizeCv();window.addEventListener('resize',resizeCv);
+  tickParts();
+  $g.className='n'+N;
+  // Prime grid so watchdog setInterval (300ms) doesn't read undefined[0]
+  grid = Array.from({length:N}, () => Array(N).fill(-1));
+  applyLang();
+  // CROSS logo (top-left) → return to launcher
+  $('logo').addEventListener('click', showLauncher);
+  $('bn2').addEventListener('contextmenu',e=>{e.preventDefault();showLauncher();});
   $('blang').addEventListener('click',()=>{lang=lang==='en'?'cn':'en';applyLang();save();});
   $('bc').addEventListener('click',crack);
   $('bn2').addEventListener('click',newGame);
@@ -989,6 +1093,7 @@ function init(){
   $('seedOv').addEventListener('click',e=>{if(e.target===$('seedOv'))$('seedOv').classList.add('hide');});
   $('seedConfirm').addEventListener('click',loadSeedFromInput);
   $('seedIn').addEventListener('keydown',e=>{if(e.key==='Enter')loadSeedFromInput();});
+  // Keyboard viewport handling
   if(window.visualViewport){
     const seedOv=$('seedOv');
     const adjustVP=()=>{
@@ -1015,17 +1120,7 @@ function init(){
   });
 }
 init();
-
-// Expose state for testing (no-op in normal use)
-window.__c100 = {
-  get N(){return N}, get TARGET(){return TARGET}, get MAX(){return MAX},
-  get grid(){return grid}, get sol(){return sol}, get taps(){return taps},
-  universalSolver, setLevel: startLevel,
-  setSeed(s){curSeed=s>>>0;const r=gen(curSeed);grid=r.grid;sol=r.sol;taps=0;initGrid=grid.map(row=>[...row]);undoStack=[];showSeed();render();popSc();},
-  importG(g){grid=g.map(r=>[...r]);sol=[];taps=0;initGrid=grid.map(row=>[...row]);undoStack=[];render();popSc();},
-};
 })();
 </script>
-
 </body>
 </html>

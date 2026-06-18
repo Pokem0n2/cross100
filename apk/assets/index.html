@@ -390,6 +390,9 @@ const PALETTE=[
 /* ═══ State (current run) ═══ */
 let N=10, MAX=8, TARGET=TARGET_FN(N), currentLevel=10;
 let grid=[],taps=0,busy=false,theme='valley',lang='en',lastGray=0,sol=[],cracking=false,crackStop=false,initGrid=null,tapped=false,undoStack=[],curSeed=0;
+// pendingResult holds 'win' or 'fail' set by tap(); tryJudge() fires the banner
+// only when all animation state arrays are empty (animation fully resolved).
+let pendingResult=null;
 
 /* ═══ state ═══ */
 /* grid/taps/busy/etc. declared in State block above */
@@ -542,14 +545,15 @@ function tap(r,c){
     if(grid[cell.r][cell.c]===-1)gone.push({r:cell.r,c:cell.c});
   }
 
-  /* ── win/fail check (immediate — data already correct) ── */
+  /* ── win/fail check: data is correct immediately, but the banner waits for animation ── */
   let res='continue';
   if(!cracking){
     const gc=grayClr.length;
     lastGray=gc;
     res=chkGray(gc);
-    if(res==='win')setTimeout(showWin,500);
-    else if(res==='fail')setTimeout(showFail,500);
+    // Store result; tryJudge() in tickParts fires showWin/showFail only when ALL
+    // animation state arrays (shockwaves, rings, diamonds, parts) and pendingFx are empty.
+    if(res==='win'||res==='fail')pendingResult=res;
   }
 
   /* ── visual fx: queued, triggered when shockwave head reaches each cell ── */
@@ -1147,7 +1151,22 @@ function tickParts(){
     ctx.restore();
   }
   ctx.globalAlpha=1;
+  // Fire win/fail banner only after ALL animation state arrays have drained.
+  tryJudge();
   requestAnimationFrame(tickParts);
+}
+
+/* ═══ win/fail banner timing ═══ */
+// Fires after every animation frame: when shockwaves/rings/diamonds/parts are all empty
+// AND pendingFx is null AND there's a stored win/fail result, show the banner.
+// This guarantees the banner never appears before the player has seen the laser + particles.
+function tryJudge(){
+  if(!pendingResult)return;
+  if(busy||pendingFx)return;
+  if(shockwaves.length||rings.length||diamonds.length||parts.length)return;
+  var r=pendingResult; pendingResult=null;
+  if(r==='win')showWin();
+  else if(r==='fail')showFail();
 }
 
 /* ═══ watchdog ═══ */

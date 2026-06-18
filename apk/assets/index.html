@@ -824,6 +824,7 @@ function showHelp(){
 let parts=[];
 let shockwaves=[];
 let rings=[];
+let diamonds=[];
 function resizeCv(){const w=$('gwrap');$cv.width=w.offsetWidth;$cv.height=w.offsetHeight}
 
 function emit(r,c){
@@ -874,6 +875,8 @@ function emitSW(r,c){
   [{dx:0,dy:-1},{dx:0,dy:1},{dx:-1,dy:0},{dx:1,dy:0}].forEach(d=>{
     shockwaves.push({x:cx,y:cy,dx:d.dx,dy:d.dy,pos:0,spd:isP?14:9,life:1,col});
   });
+  // Rotated 45° diamond square at click center — beams appear to emit from its corners
+  diamonds.push({x:cx,y:cy,sz:cr.width*0.45,life:1,dec:.025,col:isP?'#ffd700':'#fff'});
 }
 
 function tickSW(){
@@ -977,6 +980,41 @@ function tickParts(){
     ctx.shadowBlur=8*p.life;
     if(p.sq)ctx.fillRect(p.x-p.sz/2,p.y-p.sz/2,p.sz,p.sz);
     else{ctx.beginPath();ctx.arc(p.x,p.y,p.sz,0,Math.PI*2);ctx.fill()}
+    ctx.restore();
+  }
+  ctx.globalAlpha=1;
+  // Rotated 45° diamond — drawn FIRST so laser beams appear to come from its corners
+  for(let i=diamonds.length-1;i>=0;i--){
+    const d=diamonds[i];
+    d.life-=d.dec;
+    if(d.life<=0){diamonds.splice(i,1);continue}
+    const t=1-d.life;
+    const hold=t<0.4?1:1-(t-0.4)/0.6;
+    const sz=d.sz*(0.5+hold*0.5);
+    ctx.save();
+    ctx.translate(d.x,d.y);
+    ctx.rotate(Math.PI/4);
+    // Strong dark filled core — high contrast so laser head halos don't wash it out
+    ctx.shadowColor='#000';
+    ctx.shadowBlur=20*hold;
+    ctx.fillStyle='#1a1a1a';
+    ctx.globalAlpha=hold*0.85;
+    ctx.fillRect(-sz/2,-sz/2,sz,sz);
+    // Bright outer border
+    ctx.globalAlpha=hold;
+    ctx.shadowColor=d.col;
+    ctx.shadowBlur=18*hold;
+    ctx.strokeStyle=d.col;
+    ctx.lineWidth=3+hold*3;
+    ctx.strokeRect(-sz/2,-sz/2,sz,sz);
+    // White inner border
+    ctx.globalAlpha=hold*0.95;
+    ctx.shadowColor='#fff';
+    ctx.shadowBlur=10*hold;
+    ctx.strokeStyle='#fff';
+    ctx.lineWidth=1.5;
+    const pad=3;
+    ctx.strokeRect(-sz/2+pad,-sz/2+pad,sz-pad*2,sz-pad*2);
     ctx.restore();
   }
   ctx.globalAlpha=1;

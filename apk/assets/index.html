@@ -425,8 +425,8 @@ function playSfx(key){
 // B starts at delay d after A. Each track's gap is covered by the other.
 // Timer-based (not loop=true) for precise t and d control.
 var _bgmActive=null;
-var _bgmPeriod=1734; // t: restart period in ms (tunable)
-var _bgmOffset=867;  // d: B's delay after A in ms (tunable)
+var _bgmPeriod=1834; // t: restart period in ms (tunable)
+var _bgmOffset=917;  // d: B's delay after A in ms (tunable)
 var _bgmTimerA=null,_bgmTimerB=null,_bgmTimerBDelay=null;
 function _restartTrack(el){
   try{ el.currentTime=0; }catch(e){}

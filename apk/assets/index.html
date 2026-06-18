@@ -557,13 +557,55 @@ function tap(r,c){
   const tapCr=tapCell?tapCell.getBoundingClientRect():null;
   const cvr=$cv.getBoundingClientRect();
   pendingFx={
-    affected:aff.map(x=>({r:x.r,c:x.c,d:x.d,key:x.r*N+x.c,done:false})),
-    gone:gone.map(g=>({r:g.r,c:g.c,key:g.r*N+g.c,done:false})),
+    affected:aff.map(x=>{
+      // Clicked cell itself — mark done immediately (no beam reaches it)
+      const isClick=x.r===r&&x.c===c;
+      return {r:x.r,c:x.c,d:x.d,key:x.r*N+x.c,done:!!isClick}
+    }),
+    gone:gone.map(g=>{
+      // Clicked cell itself if it ended up in gone — mark done immediately
+      const isClick=g.r===r&&g.c===c;
+      return {r:g.r,c:g.c,key:g.r*N+g.c,done:!!isClick}
+    }),
     result:res,
     _tapRow:r,_tapCol:c,
     _tapCx:tapCr?tapCr.left-cvr.left+tapCr.width/2:0,
     _tapCy:tapCr?tapCr.top-cvr.top+tapCr.height/2:0
   };
+  // Fire the clicked cell's visual fx right away (it's the laser origin, no beam "arrives")
+  const selfEl=$g.children[r*N+c];
+  if(selfEl){selfEl.classList.add('pop');setTimeout(()=>selfEl.classList.remove('pop'),300)}
+  upd(r,c);
+  // If clicked cell is in `gone`, fire its gone animation too (with same 40ms head-pass delay)
+  const isSelfGone=!!pendingFx.gone.find(g=>g.done);
+  if(isSelfGone){
+    setTimeout(()=>{
+      if(selfEl){selfEl.classList.add('gone');setTimeout(()=>selfEl.classList.remove('gone'),400)}
+      emit(r,c);
+    },40);
+  }
+  // SAFETY NET: if for any reason the shockwave-arrival-driven fx state machine
+  // fails to complete (e.g. DOM rebuild, hit-detection edge case), force-unlock busy
+  // after 2.5s so the player is never stuck. Also clear pendingFx and any lingering
+  // shockwaves so the next tap() starts clean.
+  const thisPendingFx=pendingFx;
+  setTimeout(()=>{
+    if(pendingFx===thisPendingFx){
+      // Still unlocked. Force everything done.
+      pendingFx.affected.forEach(c=>c.done=true);
+      pendingFx.gone.forEach(g=>{
+        if(!g.done){
+          g.done=true;
+          const gel=$g.children[g.r*N+g.c];
+          if(gel){gel.classList.add('gone');setTimeout(()=>gel.classList.remove('gone'),400)}
+          emit(g.r,g.c);
+        }
+      });
+      if(theme==='pixel'&&pendingFx.affected.length>0){$g.classList.add('shake');setTimeout(()=>$g.classList.remove('shake'),120)}
+      busy=false;
+      pendingFx=null;
+    }
+  },2500);
 }
 
 function chkGray(gc){
@@ -732,6 +774,12 @@ function newGame(){
   if(bcBtn){bcBtn.classList.remove('disabled');bcBtn.innerHTML=SVG_X;}
   curSeed=(Math.random()*0xFFFFFFFF)>>>0;
   const r=gen(curSeed);grid=r.grid;sol=r.sol;taps=0;initGrid=grid.map(row=>[...row]);undoStack=[];
+  // Clear all animation state from any previous run
+  pendingFx=null;
+  shockwaves.length=0;
+  rings.length=0;
+  diamonds.length=0;
+  parts.length=0;
   showSeed();
   try{var sb=document.getElementById('stuckBanner');if(sb)sb.remove();}catch(e){}
   $('bu').classList.add('disabled');$ov.classList.add('hide');popSc();render();
@@ -742,6 +790,12 @@ function restartLevel(){
   if(bcBtn){bcBtn.classList.remove('disabled');bcBtn.innerHTML=SVG_X;}
   if(initGrid){grid=initGrid.map(row=>[...row]);}
   taps=0;undoStack=[];$('bu').classList.add('disabled');
+  // Clear all animation state from any previous run
+  pendingFx=null;
+  shockwaves.length=0;
+  rings.length=0;
+  diamonds.length=0;
+  parts.length=0;
   try{var sb=document.getElementById('stuckBanner');if(sb)sb.remove();}catch(e){}
   $ov.classList.add('hide');popSc();render();
 }
@@ -767,6 +821,12 @@ function loadSeedFromInput(){
   if(bcBtn){bcBtn.classList.remove('disabled');bcBtn.innerHTML=SVG_X;}
   curSeed=seed>>>0;
   const r=gen(curSeed);grid=r.grid;sol=r.sol;taps=0;initGrid=grid.map(row=>[...row]);undoStack=[];
+  // Clear all animation state from any previous run
+  pendingFx=null;
+  shockwaves.length=0;
+  rings.length=0;
+  diamonds.length=0;
+  parts.length=0;
   showSeed();$('bu').classList.add('disabled');
   try{var sb=document.getElementById('stuckBanner');if(sb)sb.remove();}catch(e){}
   $ov.classList.add('hide');popSc();render();
@@ -1092,6 +1152,10 @@ function tickParts(){
 
 /* ═══ watchdog ═══ */
 setInterval(function(){
+  // Don't show stuck banner mid-animation — wait for current tap's fx to fully resolve
+  if(typeof busy!=='undefined' && busy)return;
+  if(typeof pendingFx!=='undefined' && pendingFx)return;
+  if(typeof shockwaves!=='undefined' && shockwaves.length)return;
   var rem=0;
   for(var r=0;r<N;r++)for(var c=0;c<N;c++)if(grid[r][c]>=0)rem++;
   var rmEl=document.getElementById('rm');

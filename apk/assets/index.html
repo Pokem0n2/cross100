@@ -442,8 +442,8 @@ function _bgmCheckLoop(){
 function startBgm(){
   if(!soundOn)return;
   if(!_bgmA){
-    _bgmA=new Audio('bgm.ogg'); _bgmA.volume=0.30; _bgmA.preload='auto'; _bgmA.load();
-    _bgmB=new Audio('bgm.ogg'); _bgmB.volume=0.30; _bgmB.preload='auto'; _bgmB.load();
+    _bgmA=new Audio('bgm.aac'); _bgmA.volume=0.30; _bgmA.preload='auto'; _bgmA.load();
+    _bgmB=new Audio('bgm.aac'); _bgmB.volume=0.30; _bgmB.preload='auto'; _bgmB.load();
   }
   if(!_bgmActive || _bgmActive.paused){
     _bgmActive=_bgmA;

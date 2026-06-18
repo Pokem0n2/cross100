@@ -1171,10 +1171,15 @@ function tryJudge(){
 
 /* ═══ watchdog ═══ */
 setInterval(function(){
-  // Don't show stuck banner mid-animation — wait for current tap's fx to fully resolve
+  // Don't show stuck banner mid-animation — wait for current tap's fx to fully resolve.
+  // Must check ALL animation arrays (same condition as tryJudge) so the banner
+  // never appears while particles/rings/diamonds are still fading.
   if(typeof busy!=='undefined' && busy)return;
   if(typeof pendingFx!=='undefined' && pendingFx)return;
   if(typeof shockwaves!=='undefined' && shockwaves.length)return;
+  if(typeof rings!=='undefined' && rings.length)return;
+  if(typeof diamonds!=='undefined' && diamonds.length)return;
+  if(typeof parts!=='undefined' && parts.length)return;
   var rem=0;
   for(var r=0;r<N;r++)for(var c=0;c<N;c++)if(grid[r][c]>=0)rem++;
   var rmEl=document.getElementById('rm');

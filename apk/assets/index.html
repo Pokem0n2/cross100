@@ -330,6 +330,10 @@ footer{display:flex;gap:8px;padding:10px 0;justify-content:space-between;width:1
     <button class="btn-icon" id="bt" title="Switch Theme"><svg width="16" height="16" viewBox="0 0 16 16"><polygon points="8,1 15,8 8,15,1,8" fill="currentColor" stroke="none"/></svg></button>
     <button class="btn" id="bn2" data-i18n="newGame">NEW GAME</button>
     <button class="btn-icon disabled" id="bc" title="Show Solution"><svg width="16" height="16" viewBox="0 0 16 16"><polygon points="3,0 16,8 3,16" fill="currentColor" stroke="none"/></svg></button>
+    <span style="margin-left:auto;font-size:10px;color:var(--muted);display:flex;align-items:center;gap:3px">
+      d<input type="number" id="dbgD" value="5900" style="width:55px;font-size:11px;padding:1px 3px" onchange="applyBgmParams()">
+      t<input type="number" id="dbgT" value="11900" style="width:65px;font-size:11px;padding:1px 3px" onchange="applyBgmParams()">
+    </span>
   </footer>
   <button class="undo-btn disabled" id="bu" style="display:none" title="Undo"><svg width="20" height="20" viewBox="0 0 16 16"><path d="M3 8h7a3 3 0 0 1 0 6H9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 5L3 8l3 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
   <div class="ov hide" id="ov">
@@ -458,6 +462,18 @@ function stopBgm(){
   if(_bgmA){_bgmA.pause();_bgmA.currentTime=0;}
   if(_bgmB){_bgmB.pause();_bgmB.currentTime=0;}
   _bgmActive=null;
+}
+// Debug: apply new d/t values from input boxes, restart BGM immediately
+function applyBgmParams(){
+  var inpD=document.getElementById('dbgD');
+  var inpT=document.getElementById('dbgT');
+  if(inpD)_bgmOffset=parseInt(inpD.value)||_bgmOffset;
+  if(inpT)_bgmPeriod=parseInt(inpT.value)||_bgmPeriod;
+  // Restart BGM with new params if currently playing
+  if(_bgmActive && soundOn){
+    stopBgm();
+    startBgm();
+  }
 }
 function toggleSound(){
   soundOn=!soundOn;

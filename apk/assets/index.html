@@ -326,7 +326,7 @@ footer{display:flex;gap:8px;padding:10px 0;justify-content:space-between;width:1
       <div id="grid"></div>
       <canvas id="cv"></canvas>
     </div>
-    <div id="dbgTracks" style="display:none;padding:12px;overflow-x:auto;width:100%;box-sizing:border-box">
+    <div id="dbgTracks" style="display:none;padding:12px;overflow-x:auto;width:100%;box-sizing:border-box;flex:1 1 100%">
       <div style="font-size:11px;color:var(--muted);margin-bottom:10px;display:flex;justify-content:space-between;align-items:center">
         <span>BGM Track View <span style="color:#49a">■A</span> <span style="color:#e74">■B</span> <span style="color:#fff">□silence</span> · 50px=1s</span>
         <button id="dbgGrid" style="font-size:10px;padding:1px 8px;cursor:pointer">⊞ Grid</button>
@@ -574,13 +574,13 @@ function drawTracks(){
 }
 function showTrackView(){
   _trackViewOn=true;
-  $('grid').style.display='none';
-  $('cv').style.display='none';
+  $('gwrap').style.display='none';
   $('dbgTracks').style.display='';
   drawTracks();
 }
 function hideTrackView(){
   _trackViewOn=false;
+  $('gwrap').style.display='';
   $('grid').style.display='';
   $('cv').style.display='';
   $('dbgTracks').style.display='none';

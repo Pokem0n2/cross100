@@ -327,7 +327,7 @@ footer{display:flex;gap:8px;padding:10px 0;justify-content:space-between;width:1
     </div>
     <div id="dbgTracks" style="display:none;padding:12px;overflow-x:auto">
       <div style="font-size:11px;color:var(--muted);margin-bottom:10px;display:flex;justify-content:space-between;align-items:center">
-        <span>BGM Track View <span style="color:#49a">■A</span> <span style="color:#e74">■B</span> · 100px=1s</span>
+        <span>BGM Track View <span style="color:#49a">■A</span> <span style="color:#e74">■B</span> <span style="color:#fff">□silence</span> · 50px=1s</span>
         <button id="dbgGrid" style="font-size:10px;padding:1px 8px;cursor:pointer">⊞ Grid</button>
       </div>
       <div style="margin-bottom:8px">
@@ -504,51 +504,69 @@ function toggleSound(){
 }
 
 /* ═══ BGM debug track view ═══ */
-var _BGM_MS=5944; // bgm.aac total duration in ms
+var _BGM_MS=5944;      // bgm.aac total duration in ms
+var _BGM_LEAD=32;      // leading silence in ms
+var _BGM_TAIL=9;       // trailing silence in ms
+var _BGM_EFF=5903;     // effective audio in ms
 var _trackViewOn=false;
+function _makeBar(x, color, label){
+  var scale=50; // 50px = 1s
+  var leadPx=_BGM_LEAD/scale;
+  var effPx=_BGM_EFF/scale;
+  var tailPx=_BGM_TAIL/scale;
+  var wrap=document.createElement('div');
+  wrap.style.cssText='position:absolute;left:'+x+'px;height:28px;display:flex;box-sizing:border-box;border-radius:4px;overflow:hidden';
+  // Leading silence (white)
+  if(leadPx>=1){
+    var ls=document.createElement('div');
+    ls.style.cssText='width:'+leadPx+'px;height:100%;background:#fff;opacity:0.6';
+    wrap.appendChild(ls);
+  }
+  // Effective audio (colored)
+  var eff=document.createElement('div');
+  eff.style.cssText='width:'+effPx+'px;height:100%;background:'+color+';opacity:0.85;font-size:9px;color:#fff;text-align:center;line-height:28px;box-sizing:border-box';
+  eff.textContent=label;
+  wrap.appendChild(eff);
+  // Trailing silence (white)
+  if(tailPx>=1){
+    var ts=document.createElement('div');
+    ts.style.cssText='width:'+tailPx+'px;height:100%;background:#fff;opacity:0.6';
+    wrap.appendChild(ts);
+  }
+  return wrap;
+}
 function drawTracks(){
-  var scale=100; // 100px = 1000ms (1s)
-  var barW=_BGM_MS/scale; // bar width in px (~59)
+  var scale=50; // 50px = 1s
+  var barW=_BGM_MS/scale;
   var periodPx=_bgmPeriod/scale;
   var delayPx=_bgmOffset/scale;
-  // Container needs to fit: A's 2nd bar end = periodPx+barW, B's bar start+barW
   var totalW=Math.ceil(Math.max(periodPx+barW, delayPx+barW)+10);
   
   // --- Track A: 2 bars at 0 and periodPx ---
   var tA=$('trackA');
   tA.style.minWidth=totalW+'px';
   tA.innerHTML='';
-  for(var i=0;i<2;i++){
-    var x=i*periodPx;
-    var d=document.createElement('div');
-    d.style.cssText='position:absolute;left:'+x+'px;width:'+barW+'px;height:28px;background:#49a;border-radius:4px;opacity:0.85;font-size:9px;color:#fff;text-align:center;line-height:28px;box-sizing:border-box';
-    d.textContent='A'+(i+1);
-    tA.appendChild(d);
-  }
+  tA.appendChild(_makeBar(0,'#49a','A1'));
+  tA.appendChild(_makeBar(periodPx,'#49a','A2'));
   
   // --- Track B: 2 bars at delayPx and delayPx+periodPx ---
   var tB=$('trackB');
   tB.style.minWidth=totalW+'px';
   tB.innerHTML='';
-  for(var i=0;i<2;i++){
-    var x=delayPx+i*periodPx;
-    var d=document.createElement('div');
-    d.style.cssText='position:absolute;left:'+x+'px;width:'+barW+'px;height:28px;background:#e74;border-radius:4px;opacity:0.85;font-size:9px;color:#fff;text-align:center;line-height:28px;box-sizing:border-box';
-    d.textContent='B'+(i+1);
-    tB.appendChild(d);
-  }
+  tB.appendChild(_makeBar(delayPx,'#e74','B1'));
+  tB.appendChild(_makeBar(delayPx+periodPx,'#e74','B2'));
   
   // --- Ruler: marks every 1000ms ---
   var ruler=$('trackRuler');
   ruler.style.minWidth=totalW+'px';
   ruler.innerHTML='';
-  var maxMs=(totalW)*scale;
+  var maxMs=totalW*scale;
   for(var ms=0;ms<=maxMs;ms+=1000){
     var px=ms/scale;
     var tick=document.createElement('div');
     tick.style.cssText='position:absolute;left:'+(px-0.5)+'px;width:1px;height:5px;background:var(--muted)';
     ruler.appendChild(tick);
-    if(ms%(Math.ceil(maxMs/4000)*1000)===0){
+    if(ms%(Math.ceil(maxMs/6000)*1000)===0){
       var lbl=document.createElement('div');
       lbl.style.cssText='position:absolute;left:'+(px+2)+'px;top:2px';
       lbl.textContent=(ms/1000)+'s';

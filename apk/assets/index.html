@@ -328,7 +328,7 @@ footer{display:flex;gap:8px;padding:10px 0;justify-content:space-between;width:1
     </div>
     <div id="dbgTracks" style="display:none;padding:12px;overflow-x:auto;width:100%;box-sizing:border-box;flex:1 1 100%">
       <div style="font-size:11px;color:var(--muted);margin-bottom:10px;display:flex;justify-content:space-between;align-items:center">
-        <span>BGM Track View <span style="color:#49a">■A</span> <span style="color:#e74">■B</span> <span style="color:#fff">□silence</span> · 50px=1s</span>
+        <span>BGM Track View <span style="color:#49a">■A</span> <span style="color:#e74">■B</span> <span style="color:#fff">□silence</span> · 5px=1s</span>
         <button id="dbgGrid" style="font-size:10px;padding:1px 8px;cursor:pointer">⊞ Grid</button>
       </div>
       <div style="margin-bottom:8px">
@@ -512,7 +512,7 @@ var _BGM_EFF=5903;     // effective audio in ms
 var _trackViewOn=false;
 var _SIL_MIN=5; // min silence width in px for visibility (actual silence is sub-pixel)
 function _makeBar(x, color, label){
-  var scale=50; // px per second: 50px = 1s
+  var scale=5; // px per second: 5px = 1s
   var leadPx=Math.max(_BGM_LEAD/scale,_SIL_MIN);
   var effPx=_BGM_EFF/scale;
   var tailPx=Math.max(_BGM_TAIL/scale,_SIL_MIN);
@@ -534,7 +534,7 @@ function _makeBar(x, color, label){
   return wrap;
 }
 function drawTracks(){
-  var scale=50; // 50px = 1s
+  var scale=5; // 5px = 1s
   var barW=Math.max(_BGM_LEAD/scale,_SIL_MIN)+_BGM_EFF/scale+Math.max(_BGM_TAIL/scale,_SIL_MIN);
   var periodPx=_bgmPeriod/scale;
   var delayPx=_bgmOffset/scale;

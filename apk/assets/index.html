@@ -325,6 +325,21 @@ footer{display:flex;gap:8px;padding:10px 0;justify-content:space-between;width:1
       <div id="grid"></div>
       <canvas id="cv"></canvas>
     </div>
+    <div id="dbgTracks" style="display:none;padding:12px;overflow-x:auto">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:10px;display:flex;justify-content:space-between;align-items:center">
+        <span>BGM Track View <span style="color:#49a">■A</span> <span style="color:#e74">■B</span> · 100px=1s</span>
+        <button id="dbgGrid" style="font-size:10px;padding:1px 8px;cursor:pointer">⊞ Grid</button>
+      </div>
+      <div style="margin-bottom:8px">
+        <div style="font-size:10px;color:var(--muted);margin-bottom:2px">Track A</div>
+        <div id="trackA" style="position:relative;height:28px;min-width:300px;border-radius:4px;background:rgba(128,128,128,0.08)"></div>
+      </div>
+      <div style="margin-bottom:8px">
+        <div style="font-size:10px;color:var(--muted);margin-bottom:2px">Track B</div>
+        <div id="trackB" style="position:relative;height:28px;min-width:300px;border-radius:4px;background:rgba(128,128,128,0.08)"></div>
+      </div>
+      <div id="trackRuler" style="position:relative;height:16px;font-size:8px;color:var(--muted);min-width:300px"></div>
+    </div>
   </main>
   <footer id="ftr" style="display:none">
     <button class="btn-icon" id="bt" title="Switch Theme"><svg width="16" height="16" viewBox="0 0 16 16"><polygon points="8,1 15,8 8,15,1,8" fill="currentColor" stroke="none"/></svg></button>
@@ -486,6 +501,73 @@ function toggleSound(){
     if($('launcher').classList.contains('hide')) startBgm();
   }
   else{ stopBgm(); }
+}
+
+/* ═══ BGM debug track view ═══ */
+var _BGM_MS=5944; // bgm.aac total duration in ms
+var _trackViewOn=false;
+function drawTracks(){
+  var scale=100; // 100px = 1000ms (1s)
+  var barW=_BGM_MS/scale; // bar width in px (~59)
+  var periodPx=_bgmPeriod/scale;
+  var delayPx=_bgmOffset/scale;
+  // Container needs to fit: A's 2nd bar end = periodPx+barW, B's bar start+barW
+  var totalW=Math.ceil(Math.max(periodPx+barW, delayPx+barW)+10);
+  
+  // --- Track A: 2 bars at 0 and periodPx ---
+  var tA=$('trackA');
+  tA.style.minWidth=totalW+'px';
+  tA.innerHTML='';
+  for(var i=0;i<2;i++){
+    var x=i*periodPx;
+    var d=document.createElement('div');
+    d.style.cssText='position:absolute;left:'+x+'px;width:'+barW+'px;height:28px;background:#49a;border-radius:4px;opacity:0.85;font-size:9px;color:#fff;text-align:center;line-height:28px;box-sizing:border-box';
+    d.textContent='A'+(i+1);
+    tA.appendChild(d);
+  }
+  
+  // --- Track B: 2 bars at delayPx and delayPx+periodPx ---
+  var tB=$('trackB');
+  tB.style.minWidth=totalW+'px';
+  tB.innerHTML='';
+  for(var i=0;i<2;i++){
+    var x=delayPx+i*periodPx;
+    var d=document.createElement('div');
+    d.style.cssText='position:absolute;left:'+x+'px;width:'+barW+'px;height:28px;background:#e74;border-radius:4px;opacity:0.85;font-size:9px;color:#fff;text-align:center;line-height:28px;box-sizing:border-box';
+    d.textContent='B'+(i+1);
+    tB.appendChild(d);
+  }
+  
+  // --- Ruler: marks every 1000ms ---
+  var ruler=$('trackRuler');
+  ruler.style.minWidth=totalW+'px';
+  ruler.innerHTML='';
+  var maxMs=(totalW)*scale;
+  for(var ms=0;ms<=maxMs;ms+=1000){
+    var px=ms/scale;
+    var tick=document.createElement('div');
+    tick.style.cssText='position:absolute;left:'+(px-0.5)+'px;width:1px;height:5px;background:var(--muted)';
+    ruler.appendChild(tick);
+    if(ms%(Math.ceil(maxMs/4000)*1000)===0){
+      var lbl=document.createElement('div');
+      lbl.style.cssText='position:absolute;left:'+(px+2)+'px;top:2px';
+      lbl.textContent=(ms/1000)+'s';
+      ruler.appendChild(lbl);
+    }
+  }
+}
+function showTrackView(){
+  _trackViewOn=true;
+  $('grid').style.display='none';
+  $('cv').style.display='none';
+  $('dbgTracks').style.display='';
+  drawTracks();
+}
+function hideTrackView(){
+  _trackViewOn=false;
+  $('grid').style.display='';
+  $('cv').style.display='';
+  $('dbgTracks').style.display='none';
 }
 
 /* ═══ state ═══ */
@@ -1315,6 +1397,7 @@ function startLevel(level){
   $('seedBtns').style.display='';
   applyLang();
   startBgm();
+  showTrackView(); // Auto-show track debug view on level enter
   newGame();
 }
 function showLauncher(){
@@ -1382,7 +1465,13 @@ function init(){
       if(inpD)_bgmOffset=parseInt(inpD.value)||_bgmOffset;
       if(inpT)_bgmPeriod=parseInt(inpT.value)||_bgmPeriod;
       if(_bgmActive && soundOn){ stopBgm(); startBgm(); }
+      if(_trackViewOn) drawTracks();
     });
+  }
+  // Toggle between track view and grid
+  var dbgGrid=$('dbgGrid');
+  if(dbgGrid){
+    dbgGrid.addEventListener('click', hideTrackView);
   }
   // Sync sound button icon to persisted preference
   (function(){ const b=$('bsnd'); if(b)b.textContent=soundOn?'🔊':'🔇'; })();

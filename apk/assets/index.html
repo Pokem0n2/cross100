@@ -325,9 +325,9 @@ footer{display:flex;gap:8px;padding:10px 0;justify-content:space-between;width:1
       <div id="grid"></div>
       <canvas id="cv"></canvas>
     </div>
-    <div id="dbgTracks" style="display:none;padding:12px;overflow-x:auto">
+    <div id="dbgTracks" style="display:none;padding:12px;overflow-x:auto;width:100%;box-sizing:border-box">
       <div style="font-size:11px;color:var(--muted);margin-bottom:10px;display:flex;justify-content:space-between;align-items:center">
-        <span>BGM Track View <span style="color:#49a">■A</span> <span style="color:#e74">■B</span> <span style="color:#fff">□silence</span> · 50px=1s</span>
+        <span>BGM Track View <span style="color:#49a">■A</span> <span style="color:#e74">■B</span> <span style="color:#fff">□silence</span> · 20px=1s</span>
         <button id="dbgGrid" style="font-size:10px;padding:1px 8px;cursor:pointer">⊞ Grid</button>
       </div>
       <div style="margin-bottom:8px">
@@ -509,35 +509,32 @@ var _BGM_LEAD=32;      // leading silence in ms
 var _BGM_TAIL=9;       // trailing silence in ms
 var _BGM_EFF=5903;     // effective audio in ms
 var _trackViewOn=false;
+var _SIL_MIN=5; // min silence width in px for visibility (actual silence is sub-pixel)
 function _makeBar(x, color, label){
-  var scale=50; // 50px = 1s
-  var leadPx=_BGM_LEAD/scale;
+  var scale=50; // px per second: px = ms/scale → 20px = 1s
+  var leadPx=Math.max(_BGM_LEAD/scale,_SIL_MIN);
   var effPx=_BGM_EFF/scale;
-  var tailPx=_BGM_TAIL/scale;
+  var tailPx=Math.max(_BGM_TAIL/scale,_SIL_MIN);
   var wrap=document.createElement('div');
   wrap.style.cssText='position:absolute;left:'+x+'px;height:28px;display:flex;box-sizing:border-box;border-radius:4px;overflow:hidden';
-  // Leading silence (white)
-  if(leadPx>=1){
-    var ls=document.createElement('div');
-    ls.style.cssText='width:'+leadPx+'px;height:100%;background:#fff;opacity:0.6';
-    wrap.appendChild(ls);
-  }
+  // Leading silence (white block)
+  var ls=document.createElement('div');
+  ls.style.cssText='width:'+leadPx+'px;height:100%;background:#fff;flex-shrink:0';
+  wrap.appendChild(ls);
   // Effective audio (colored)
   var eff=document.createElement('div');
-  eff.style.cssText='width:'+effPx+'px;height:100%;background:'+color+';opacity:0.85;font-size:9px;color:#fff;text-align:center;line-height:28px;box-sizing:border-box';
+  eff.style.cssText='width:'+effPx+'px;height:100%;background:'+color+';opacity:0.85;font-size:9px;color:#fff;text-align:center;line-height:28px;box-sizing:border-box;flex-shrink:0';
   eff.textContent=label;
   wrap.appendChild(eff);
-  // Trailing silence (white)
-  if(tailPx>=1){
-    var ts=document.createElement('div');
-    ts.style.cssText='width:'+tailPx+'px;height:100%;background:#fff;opacity:0.6';
-    wrap.appendChild(ts);
-  }
+  // Trailing silence (white block)
+  var ts=document.createElement('div');
+  ts.style.cssText='width:'+tailPx+'px;height:100%;background:#fff;flex-shrink:0';
+  wrap.appendChild(ts);
   return wrap;
 }
 function drawTracks(){
-  var scale=50; // 50px = 1s
-  var barW=_BGM_MS/scale;
+  var scale=50; // px = ms/scale → 20px = 1s
+  var barW=Math.max(_BGM_LEAD/scale,_SIL_MIN)+_BGM_EFF/scale+Math.max(_BGM_TAIL/scale,_SIL_MIN);
   var periodPx=_bgmPeriod/scale;
   var delayPx=_bgmOffset/scale;
   var totalW=Math.ceil(Math.max(periodPx+barW, delayPx+barW)+10);

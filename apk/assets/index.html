@@ -94,6 +94,33 @@ header{width:100%;display:flex;flex-direction:column;gap:8px;padding:10px 0;posi
 .logo{font-size:22px;font-weight:300;letter-spacing:8px;text-transform:uppercase}
 [data-theme="pixel"] .logo{font-weight:700;letter-spacing:4px;text-shadow:0 0 10px var(--accent)}
 .hdr-btns{display:flex;gap:8px;position:relative}
+
+/* ═══ Custom volume sliders ═══ */
+.vol-slider{
+  -webkit-appearance:none;appearance:none;
+  width:100%;height:28px;background:transparent;outline:none;cursor:pointer;
+}
+.vol-slider::-webkit-slider-runnable-track{
+  height:6px;border-radius:3px;
+  background:linear-gradient(to right,
+    var(--accent,#c75d3a) 0%,
+    var(--accent,#c75d3a) var(--fill,50%),
+    rgba(128,128,128,0.2) var(--fill,50%),
+    rgba(128,128,128,0.2) 100%);
+  box-shadow:inset 0 1px 2px rgba(0,0,0,0.12);
+}
+.vol-slider::-webkit-slider-thumb{
+  -webkit-appearance:none;appearance:none;
+  width:18px;height:18px;border-radius:50%;
+  background:#fff;border:2px solid var(--accent,#c75d3a);
+  box-shadow:0 2px 6px rgba(0,0,0,0.25),0 0 0 0 var(--glow,rgba(199,93,58,0.2));
+  margin-top:-6px;
+  transition:box-shadow .2s,transform .1s;
+}
+.vol-slider:active::-webkit-slider-thumb{
+  transform:scale(1.15);
+  box-shadow:0 2px 8px rgba(0,0,0,0.3),0 0 0 6px var(--glow,rgba(199,93,58,0.15));
+}
 .btn{
   font-family:var(--font);background:var(--accent);color:var(--txt-l);
   border:none;border-radius:var(--crad);padding:8px 16px;
@@ -276,11 +303,11 @@ footer{display:flex;gap:8px;padding:10px 0;justify-content:space-between;width:1
         <div id="volPanel" class="hide" style="position:absolute;top:42px;right:8px;z-index:200;background:var(--card,#f5f0e8);border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,0.18);padding:12px 14px;width:180px;display:flex;flex-direction:column;gap:10px">
           <div>
             <div style="font-size:11px;color:var(--muted);margin-bottom:4px;display:flex;justify-content:space-between"><span>Music</span><span id="musicVal">50</span></div>
-            <input type="range" id="musicSlider" min="0" max="100" value="50" style="width:100%;accent-color:var(--accent,#c75d3a)">
+            <input type="range" id="musicSlider" class="vol-slider" min="0" max="100" value="50" style="--fill:50%">
           </div>
           <div>
             <div style="font-size:11px;color:var(--muted);margin-bottom:4px;display:flex;justify-content:space-between"><span>SFX</span><span id="sfxVal">20</span></div>
-            <input type="range" id="sfxSlider" min="0" max="100" value="20" style="width:100%;accent-color:var(--accent,#c75d3a)">
+            <input type="range" id="sfxSlider" class="vol-slider" min="0" max="100" value="20" style="--fill:20%">
           </div>
         </div>
         <button class="lang-btn btn-icon" id="blang" style="font-size:11px;font-weight:600;letter-spacing:1px">EN</button>
@@ -1496,8 +1523,8 @@ function init(){
   $('bu').addEventListener('click',undo);
   $('bh').addEventListener('click',showHelp);
   $('bsnd').addEventListener('click',toggleVolPanel);
-  $('musicSlider').addEventListener('input',function(){ applyMusicVol(parseInt(this.value)); });
-  $('sfxSlider').addEventListener('input',function(){ applySfxVol(parseInt(this.value)); });
+  $('musicSlider').addEventListener('input',function(){ applyMusicVol(parseInt(this.value)); this.style.setProperty('--fill',this.value+'%'); });
+  $('sfxSlider').addEventListener('input',function(){ applySfxVol(parseInt(this.value)); this.style.setProperty('--fill',this.value+'%'); });
   // Click outside closes vol panel
   document.addEventListener('click',function(e){
     var p=$('volPanel');
@@ -1525,11 +1552,11 @@ function init(){
   // Restore persisted volume slider positions
   (function(){
     var ms=$('musicSlider'), ss=$('sfxSlider');
-    if(ms){ ms.value=Math.round(musicVol*100); }
-    if(ss){ ss.value=Math.round(sfxVol*100); }
-    var mv=$('musicVal'), sv=$('sfxVal');
-    if(mv) mv.textContent=Math.round(musicVol*100);
-    if(sv) sv.textContent=Math.round(sfxVol*100);
+    if(ms){ var mv=Math.round(musicVol*100); ms.value=mv; ms.style.setProperty('--fill',mv+'%'); }
+    if(ss){ var sv=Math.round(sfxVol*100); ss.value=sv; ss.style.setProperty('--fill',sv+'%'); }
+    var mvLbl=$('musicVal'), svLbl=$('sfxVal');
+    if(mvLbl) mvLbl.textContent=Math.round(musicVol*100);
+    if(svLbl) svLbl.textContent=Math.round(sfxVol*100);
   })();
   $('bCopySeed').addEventListener('click',()=>{
     navigator.clipboard.writeText(curSeed.toString(16).padStart(8,'0')).then(()=>{

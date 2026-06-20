@@ -93,7 +93,7 @@ header{width:100%;display:flex;flex-direction:column;gap:8px;padding:10px 0;posi
 .hdr-top{display:flex;align-items:center;justify-content:space-between}
 .logo{font-size:22px;font-weight:300;letter-spacing:8px;text-transform:uppercase}
 [data-theme="pixel"] .logo{font-weight:700;letter-spacing:4px;text-shadow:0 0 10px var(--accent)}
-.hdr-btns{display:flex;gap:8px}
+.hdr-btns{display:flex;gap:8px;position:relative}
 .btn{
   font-family:var(--font);background:var(--accent);color:var(--txt-l);
   border:none;border-radius:var(--crad);padding:8px 16px;
@@ -272,7 +272,17 @@ footer{display:flex;gap:8px;padding:10px 0;justify-content:space-between;width:1
     <div class="hdr-top">
       <span class="logo" id="logo" style="cursor:pointer">CROSS</span>
       <div class="hdr-btns">
-        <button class="btn-icon" id="bsnd" title="Sound" style="font-size:14px;line-height:1;padding:0;font-family:system-ui">🔊</button>
+        <button class="btn-icon" id="bsnd" title="Sound" style="font-size:16px;line-height:1;padding:2px 4px">♫</button>
+        <div id="volPanel" class="hide" style="position:absolute;top:42px;right:8px;z-index:200;background:var(--card,#f5f0e8);border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,0.18);padding:12px 14px;width:180px;display:flex;flex-direction:column;gap:10px">
+          <div>
+            <div style="font-size:11px;color:var(--muted);margin-bottom:4px;display:flex;justify-content:space-between"><span>Music</span><span id="musicVal">50</span></div>
+            <input type="range" id="musicSlider" min="0" max="100" value="50" style="width:100%;accent-color:var(--accent,#c75d3a)">
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--muted);margin-bottom:4px;display:flex;justify-content:space-between"><span>SFX</span><span id="sfxVal">20</span></div>
+            <input type="range" id="sfxSlider" min="0" max="100" value="20" style="width:100%;accent-color:var(--accent,#c75d3a)">
+          </div>
+        </div>
         <button class="lang-btn btn-icon" id="blang" style="font-size:11px;font-weight:600;letter-spacing:1px">EN</button>
         <button class="btn-icon" id="bh" title="Help">?</button>
       </div>
@@ -434,14 +444,15 @@ for(const k in SFX){ SFX[k].preload='auto'; SFX[k].load(); }
 
 let _bgmA=null,_bgmB=null;
 
-let soundOn=(function(){ try{ const v=localStorage.getItem('cross_sound'); return v==null?true:v==='1'; }catch(e){ return true; } })();
+let musicVol=(function(){ try{ var v=localStorage.getItem('cross_music_vol'); return v==null?0.50:parseFloat(v); }catch(e){ return 0.50; } })();
+let sfxVol=(function(){ try{ var v=localStorage.getItem('cross_sfx_vol'); return v==null?0.20:parseFloat(v); }catch(e){ return 0.20; } })();
 
 function playSfx(key){
-  if(!soundOn)return;
+  if(sfxVol<=0)return;
   const a=SFX[key]; if(!a)return;
   try{
     const c=a.cloneNode(true);
-    c.volume=a.volume;
+    c.volume=sfxVol;
     const p=c.play();
     if(p&&p.catch)p.catch(()=>{});
   }catch(e){}
@@ -458,10 +469,10 @@ function _restartTrack(el){
   var p=el.play(); if(p&&p.catch)p.catch(()=>{});
 }
 function startBgm(){
-  if(!soundOn)return;
+  if(musicVol<=0)return;
   if(!_bgmA){
-    _bgmA=new Audio('bgm.aac'); _bgmA.volume=0.15; _bgmA.preload='auto'; _bgmA.load();
-    _bgmB=new Audio('bgm.aac'); _bgmB.volume=0.15; _bgmB.preload='auto'; _bgmB.load();
+    _bgmA=new Audio('bgm.aac'); _bgmA.volume=musicVol; _bgmA.preload='auto'; _bgmA.load();
+    _bgmB=new Audio('bgm.aac'); _bgmB.volume=musicVol; _bgmB.preload='auto'; _bgmB.load();
   }
   if(!_bgmActive){
     // Track A: start immediately, restart every t
@@ -497,16 +508,22 @@ function applyBgmParams(){
   }
 }
 */
-function toggleSound(){
-  soundOn=!soundOn;
-  try{ localStorage.setItem('cross_sound', soundOn?'1':'0'); }catch(e){}
-  const btn=document.getElementById('bsnd');
-  if(btn)btn.textContent=soundOn?'🔊':'🔇';
-  if(soundOn){
-    // Only start BGM when in-game, not on launcher
-    if($('launcher').classList.contains('hide')) startBgm();
-  }
-  else{ stopBgm(); }
+function toggleVolPanel(){
+  var p=$('volPanel');
+  if(p) p.classList.toggle('hide');
+}
+function applyMusicVol(v){
+  musicVol=v/100;
+  try{ localStorage.setItem('cross_music_vol', musicVol); }catch(e){}
+  if(_bgmA)_bgmA.volume=musicVol;
+  if(_bgmB)_bgmB.volume=musicVol;
+  if(musicVol>0 && !_bgmActive && $('launcher').classList.contains('hide')) startBgm();
+  var lbl=$('musicVal'); if(lbl) lbl.textContent=v;
+}
+function applySfxVol(v){
+  sfxVol=v/100;
+  try{ localStorage.setItem('cross_sfx_vol', sfxVol); }catch(e){}
+  var lbl=$('sfxVal'); if(lbl) lbl.textContent=v;
 }
 
 /* ═══ BGM debug track view (commented out for release) ═══
@@ -1478,7 +1495,16 @@ function init(){
   $('bt').addEventListener('click',togTheme);
   $('bu').addEventListener('click',undo);
   $('bh').addEventListener('click',showHelp);
-  $('bsnd').addEventListener('click',toggleSound);
+  $('bsnd').addEventListener('click',toggleVolPanel);
+  $('musicSlider').addEventListener('input',function(){ applyMusicVol(parseInt(this.value)); });
+  $('sfxSlider').addEventListener('input',function(){ applySfxVol(parseInt(this.value)); });
+  // Click outside closes vol panel
+  document.addEventListener('click',function(e){
+    var p=$('volPanel');
+    if(p && !p.classList.contains('hide') && !p.contains(e.target) && e.target.id!=='bsnd'){
+      p.classList.add('hide');
+    }
+  });
   /* DEBUG: d/t inputs + Apply button (commented out for release)
   var dbgApply=$('dbgApply');
   if(dbgApply){
@@ -1496,8 +1522,15 @@ function init(){
     dbgGrid.addEventListener('click', hideTrackView);
   }
   */
-  // Sync sound button icon to persisted preference
-  (function(){ const b=$('bsnd'); if(b)b.textContent=soundOn?'🔊':'🔇'; })();
+  // Restore persisted volume slider positions
+  (function(){
+    var ms=$('musicSlider'), ss=$('sfxSlider');
+    if(ms){ ms.value=Math.round(musicVol*100); }
+    if(ss){ ss.value=Math.round(sfxVol*100); }
+    var mv=$('musicVal'), sv=$('sfxVal');
+    if(mv) mv.textContent=Math.round(musicVol*100);
+    if(sv) sv.textContent=Math.round(sfxVol*100);
+  })();
   $('bCopySeed').addEventListener('click',()=>{
     navigator.clipboard.writeText(curSeed.toString(16).padStart(8,'0')).then(()=>{
       const btn=$('bCopySeed');const old=btn.textContent;btn.style.minWidth=btn.offsetWidth+'px';btn.textContent=t('copied');setTimeout(()=>{btn.textContent=old;btn.style.minWidth='';},1200);

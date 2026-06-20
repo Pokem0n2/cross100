@@ -5,7 +5,7 @@
 # AND uses java -jar d8.jar explicitly (the d8 bash script can confuse box64)
 set -e
 
-WS="/home/spark/.hermes/kanban/workspaces/t_3407d04c/cross100"
+WS="$(cd "$(dirname "$0")/.." && pwd)"
 ANDROID_HOME="${ANDROID_HOME:-$HOME/android-sdk}"
 ANDROID_JAR="$ANDROID_HOME/platforms/android-34/android.jar"
 BT="$ANDROID_HOME/build-tools/34.0.0"

@@ -347,8 +347,8 @@ footer{display:flex;gap:8px;padding:10px 0;justify-content:space-between;width:1
     <button class="btn" id="bn2" data-i18n="newGame">NEW GAME</button>
     <button class="btn-icon disabled" id="bc" title="Show Solution"><svg width="16" height="16" viewBox="0 0 16 16"><polygon points="3,0 16,8 3,16" fill="currentColor" stroke="none"/></svg></button>
     <span style="margin-left:auto;font-size:10px;color:var(--muted);display:flex;align-items:center;gap:3px">
-      d<input type="number" id="dbgD" value="1925" style="width:55px;font-size:11px;padding:1px 3px">
-      t<input type="number" id="dbgT" value="3850" style="width:65px;font-size:11px;padding:1px 3px">
+      d<input type="number" id="dbgD" value="1878" style="width:55px;font-size:11px;padding:1px 3px">
+      t<input type="number" id="dbgT" value="3756" style="width:65px;font-size:11px;padding:1px 3px">
       <button id="dbgApply" style="font-size:11px;padding:1px 6px;cursor:pointer">↻</button>
     </span>
   </footer>
@@ -446,8 +446,8 @@ function playSfx(key){
 // B starts at delay d after A. Each track's gap is covered by the other.
 // Timer-based (not loop=true) for precise t and d control.
 var _bgmActive=null;
-var _bgmPeriod=3850; // t: restart period in ms (tunable)
-var _bgmOffset=1925;  // d: B's delay after A in ms (tunable)
+var _bgmPeriod=3756; // t: restart period in ms (tunable)
+var _bgmOffset=1878;  // d: B's delay after A in ms (tunable)
 var _bgmTimerA=null,_bgmTimerB=null,_bgmTimerBDelay=null;
 function _restartTrack(el){
   try{ el.currentTime=0; }catch(e){}
@@ -505,10 +505,10 @@ function toggleSound(){
 }
 
 /* ═══ BGM debug track view ═══ */
-var _BGM_MS=1927;      // bgm.aac total duration in ms
-var _BGM_LEAD=3;       // leading silence in ms
-var _BGM_TAIL=0;       // trailing silence in ms
-var _BGM_EFF=1924;     // effective audio in ms
+var _BGM_MS=1997;      // bgm.aac total duration in ms
+var _BGM_LEAD=24;      // leading silence in ms
+var _BGM_TAIL=14;      // trailing silence in ms
+var _BGM_EFF=1958;     // effective audio in ms
 var _trackViewOn=false;
 var _SIL_MIN=5; // min silence width in px for visibility (actual silence is sub-pixel)
 function _makeBar(x, color, label){

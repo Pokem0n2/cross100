@@ -326,6 +326,7 @@ footer{display:flex;gap:8px;padding:10px 0;justify-content:space-between;width:1
       <div id="grid"></div>
       <canvas id="cv"></canvas>
     </div>
+    <!-- DEBUG: BGM track view (commented out for release)
     <div id="dbgTracks" style="display:none;padding:12px;overflow-x:auto;width:100%;box-sizing:border-box;flex:1 1 100%">
       <div style="font-size:11px;color:var(--muted);margin-bottom:10px;display:flex;justify-content:space-between;align-items:center">
         <span>BGM Track View <span style="color:#49a">■A</span> <span style="color:#e74">■B</span> <span style="color:#fff">□silence</span> · 5px=1s</span>
@@ -341,16 +342,19 @@ footer{display:flex;gap:8px;padding:10px 0;justify-content:space-between;width:1
       </div>
       <div id="trackRuler" style="position:relative;height:16px;font-size:8px;color:var(--muted);min-width:300px"></div>
     </div>
+    -->
   </main>
   <footer id="ftr" style="display:none">
     <button class="btn-icon" id="bt" title="Switch Theme"><svg width="16" height="16" viewBox="0 0 16 16"><polygon points="8,1 15,8 8,15,1,8" fill="currentColor" stroke="none"/></svg></button>
     <button class="btn" id="bn2" data-i18n="newGame">NEW GAME</button>
     <button class="btn-icon disabled" id="bc" title="Show Solution"><svg width="16" height="16" viewBox="0 0 16 16"><polygon points="3,0 16,8 3,16" fill="currentColor" stroke="none"/></svg></button>
+    <!-- DEBUG: d/t input boxes (commented out for release)
     <span style="margin-left:auto;font-size:10px;color:var(--muted);display:flex;align-items:center;gap:3px">
       d<input type="number" id="dbgD" value="1878" style="width:55px;font-size:11px;padding:1px 3px">
       t<input type="number" id="dbgT" value="3756" style="width:65px;font-size:11px;padding:1px 3px">
       <button id="dbgApply" style="font-size:11px;padding:1px 6px;cursor:pointer">↻</button>
     </span>
+    -->
   </footer>
   <button class="undo-btn disabled" id="bu" style="display:none" title="Undo"><svg width="20" height="20" viewBox="0 0 16 16"><path d="M3 8h7a3 3 0 0 1 0 6H9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 5L3 8l3 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
   <div class="ov hide" id="ov">
@@ -446,8 +450,8 @@ function playSfx(key){
 // B starts at delay d after A. Each track's gap is covered by the other.
 // Timer-based (not loop=true) for precise t and d control.
 var _bgmActive=null;
-var _bgmPeriod=3756; // t: restart period in ms (tunable)
-var _bgmOffset=1878;  // d: B's delay after A in ms (tunable)
+var _bgmPeriod=3960; // t: restart period in ms
+var _bgmOffset=1980;  // d: B's delay after A in ms
 var _bgmTimerA=null,_bgmTimerB=null,_bgmTimerBDelay=null;
 function _restartTrack(el){
   try{ el.currentTime=0; }catch(e){}
@@ -480,7 +484,7 @@ function stopBgm(){
   if(_bgmB){_bgmB.pause();_bgmB.currentTime=0;}
   _bgmActive=null;
 }
-// Debug: apply new d/t values from input boxes, restart BGM immediately
+/* DEBUG: apply new d/t values from input boxes (commented out for release)
 function applyBgmParams(){
   var inpD=document.getElementById('dbgD');
   var inpT=document.getElementById('dbgT');
@@ -492,6 +496,7 @@ function applyBgmParams(){
     startBgm();
   }
 }
+*/
 function toggleSound(){
   soundOn=!soundOn;
   try{ localStorage.setItem('cross_sound', soundOn?'1':'0'); }catch(e){}
@@ -504,7 +509,7 @@ function toggleSound(){
   else{ stopBgm(); }
 }
 
-/* ═══ BGM debug track view ═══ */
+/* ═══ BGM debug track view (commented out for release) ═══
 var _BGM_MS=1997;      // bgm.aac total duration in ms
 var _BGM_LEAD=24;      // leading silence in ms
 var _BGM_TAIL=14;      // trailing silence in ms
@@ -539,21 +544,21 @@ function drawTracks(){
   var periodPx=_bgmPeriod/scale;
   var delayPx=_bgmOffset/scale;
   var totalW=Math.ceil(Math.max(periodPx+barW, delayPx+barW)+10);
-  
+
   // --- Track A: 2 bars at 0 and periodPx ---
   var tA=$('trackA');
   tA.style.minWidth=totalW+'px';
   tA.innerHTML='';
   tA.appendChild(_makeBar(0,'#49a','A1'));
   tA.appendChild(_makeBar(periodPx,'#49a','A2'));
-  
+
   // --- Track B: 2 bars at delayPx and delayPx+periodPx ---
   var tB=$('trackB');
   tB.style.minWidth=totalW+'px';
   tB.innerHTML='';
   tB.appendChild(_makeBar(delayPx,'#e74','B1'));
   tB.appendChild(_makeBar(delayPx+periodPx,'#e74','B2'));
-  
+
   // --- Ruler: marks every 1000ms ---
   var ruler=$('trackRuler');
   ruler.style.minWidth=totalW+'px';
@@ -585,6 +590,7 @@ function hideTrackView(){
   $('cv').style.display='';
   $('dbgTracks').style.display='none';
 }
+*/
 
 /* ═══ state ═══ */
 /* grid/taps/busy/etc. declared in State block above */
@@ -1413,7 +1419,7 @@ function startLevel(level){
   $('seedBtns').style.display='';
   applyLang();
   startBgm();
-  showTrackView(); // Auto-show track debug view on level enter
+  // showTrackView(); // DEBUG: disabled for release
   newGame();
 }
 function showLauncher(){
@@ -1473,7 +1479,7 @@ function init(){
   $('bu').addEventListener('click',undo);
   $('bh').addEventListener('click',showHelp);
   $('bsnd').addEventListener('click',toggleSound);
-  // Debug: d/t inputs + Apply button (inside IIFE for scope access)
+  /* DEBUG: d/t inputs + Apply button (commented out for release)
   var dbgApply=$('dbgApply');
   if(dbgApply){
     dbgApply.addEventListener('click', function(){
@@ -1489,6 +1495,7 @@ function init(){
   if(dbgGrid){
     dbgGrid.addEventListener('click', hideTrackView);
   }
+  */
   // Sync sound button icon to persisted preference
   (function(){ const b=$('bsnd'); if(b)b.textContent=soundOn?'🔊':'🔇'; })();
   $('bCopySeed').addEventListener('click',()=>{

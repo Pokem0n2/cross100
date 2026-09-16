@@ -760,10 +760,34 @@ function upd(r,c){
   if(el)el.style.background=cellColor(grid[r][c]);
 }
 
+/* Force-paint every not-yet-painted cell of the current pendingFx.
+   The shockwave state machine paints cells only when a beam head reaches
+   them; if the fx is discarded early (next tap replaces it) or the safety
+   net fires, unpainted cells would keep stale colors forever. */
+function flushPendingFx(){
+  if(!pendingFx)return;
+  pendingFx.affected.forEach(cell=>{
+    if(!cell.done){
+      cell.done=true;
+      upd(cell.r,cell.c);
+    }
+  });
+  pendingFx.gone.forEach(g=>{
+    if(!g.done){
+      g.done=true;
+      const gel=$g.children[g.r*N+g.c];
+      if(gel){gel.classList.add('gone');setTimeout(()=>gel.classList.remove('gone'),400)}
+      emit(g.r,g.c);
+    }
+  });
+  pendingFx=null;
+}
+
 /* ═══ tap logic ═══ */
 function tap(r,c){
   if(grid[r][c]<0)return;
   if(!cracking&&busy)return;
+  flushPendingFx(); // v2.0.51: previous tap's visuals must complete before this one starts
   busy=true;
   if(!cracking){taps++;popSc();if(!tapped){tapped=true;$('bc').classList.add('disabled');}}
   undoStack.push(grid.map(row=>[...row]));$('bu').classList.remove('disabled');

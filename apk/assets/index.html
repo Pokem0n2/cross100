@@ -791,7 +791,9 @@ function tap(r,c,fromDemo){
   flushPendingFx(); // v2.0.51: previous tap's visuals must complete before this one starts
   busy=true;
   if(!cracking){taps++;popSc();if(!tapped){tapped=true;$('bc').classList.add('disabled');}}
-  undoStack.push(grid.map(row=>[...row]));$('bu').classList.remove('disabled');
+  if(!fromDemo){ // v2.0.55: demo taps must not pollute the undo stack
+    undoStack.push(grid.map(row=>[...row]));$('bu').classList.remove('disabled');
+  }
   playSfx('laser');
   emitSW(r,c);
 

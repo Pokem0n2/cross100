@@ -1031,7 +1031,14 @@ function crack(){
         el.classList.remove('hint');
         tap(r,c);
         i++;
-        setTimeout(step,650);
+        /* v2.0.53: wait until this move's shockwave fx has fully resolved
+           (all cells painted, busy unlocked) before the next step — keeps the
+           demo correct regardless of frame rate on slow devices. */
+        (function nextStep(){
+          if(crackStop){cracking=false;busy=false;bcBtn.innerHTML=SVG_X;bcBtn.classList.remove('disabled');bcBtn.style.opacity='1';return;}
+          if(busy||pendingFx){setTimeout(nextStep,60);return;}
+          setTimeout(step,250);
+        })();
       },450);
     }else{i++;step()}
   }

@@ -784,8 +784,9 @@ function flushPendingFx(){
 }
 
 /* ═══ tap logic ═══ */
-function tap(r,c){
+function tap(r,c,fromDemo){
   if(grid[r][c]<0)return;
+  if(cracking&&!fromDemo)return; // v2.0.54: player input locked while the solution demo plays
   if(!cracking&&busy)return;
   flushPendingFx(); // v2.0.51: previous tap's visuals must complete before this one starts
   busy=true;
@@ -1029,7 +1030,7 @@ function crack(){
       setTimeout(()=>{
         if(crackStop){cracking=false;busy=false;bcBtn.innerHTML=SVG_X;bcBtn.classList.remove('disabled');bcBtn.style.opacity='1';return;}
         el.classList.remove('hint');
-        tap(r,c);
+        tap(r,c,true); // internal demo tap bypasses the input lock
         i++;
         /* v2.0.53: wait until this move's shockwave fx has fully resolved
            (all cells painted, busy unlocked) before the next step — keeps the
@@ -1078,6 +1079,7 @@ function restartLevel(){
   $ov.classList.add('hide');popSc();render();
 }
 function undo(){
+  if(cracking)return; // v2.0.54: no undo while the solution demo plays
   if(busy||!undoStack.length)return;
   // Close overlay if showing
   $ov.classList.add('hide');

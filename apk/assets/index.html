@@ -1166,13 +1166,13 @@ const SPARK_DRAG=0.985;   // air resistance per tick
 const SPARK_MAX=600;      // hard cap for performance
 
 function sparkColor(life){
-  // cooling gradient: white-hot → amber → orange-red → deep red
+  // cooling gradient: white-hot → amber → red-orange → deep red
   // (short white phase — sparks must read RED, like cutting steel)
   if(life>0.85)return '#fff6dc';
-  if(life>0.55)return '#ffc14d';
-  if(life>0.30)return '#ff6a1e';
-  if(life>0.14)return '#dd320c';
-  return '#7d1607';
+  if(life>0.55)return '#ffb041';
+  if(life>0.30)return '#ff5412';
+  if(life>0.14)return '#d92b0a';
+  return '#8a1405';
 }
 
 function addSpark(x,y,vx,vy,power){

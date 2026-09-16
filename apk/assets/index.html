@@ -1215,8 +1215,12 @@ function emitSW(r,c){
   const cx=cr.left-cvr.left+cr.width/2, cy=cr.top-cvr.top+cr.height/2;
   const isP=theme==='pixel';
   const col=isP?'#ffd700':'#b87060';
+  /* Beam reach (px) = spd / 0.028 (life decay per tick). On 6x6+ grids the old
+     fixed spd=9 gave ~324px — short of the board diagonal, so far cells never
+     saw their color update. Scale spd so reach always covers the full board. */
+  const spd=Math.max(isP?14:9, Math.ceil($cv.width*0.03)+2);
   [{dx:0,dy:-1},{dx:0,dy:1},{dx:-1,dy:0},{dx:1,dy:0}].forEach(d=>{
-    shockwaves.push({x:cx,y:cy,dx:d.dx,dy:d.dy,pos:0,spd:isP?14:9,life:1,col});
+    shockwaves.push({x:cx,y:cy,dx:d.dx,dy:d.dy,pos:0,spd,life:1,col});
   });
   // Rotated 45° diamond square at click center — beams appear to emit from its corners
   diamonds.push({x:cx,y:cy,sz:cr.width*0.45,life:1,dec:.025,col:isP?'#ffd700':'#fff'});

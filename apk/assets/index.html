@@ -1052,6 +1052,7 @@ function tap(r,c,fromDemo){
       if(theme==='pixel'&&pendingFx.affected.length>0){$g.classList.add('shake');setTimeout(()=>$g.classList.remove('shake'),120)}
       busy=false;
       pendingFx=null;
+      updAlive();   // v2.1.0-fix: safety-net unlock must also refresh crack state
     }
   },2500);
 }
@@ -1509,6 +1510,7 @@ function tickSW(){
       if(theme==='pixel'&&pendingFx.affected.length>0){$g.classList.add('shake');setTimeout(()=>$g.classList.remove('shake'),120)}
       busy=false;
       pendingFx=null;
+      updAlive();   // v2.1.0-fix: re-evaluate crack button after fx settles
     }
   }
   for(let i=shockwaves.length-1;i>=0;i--){
@@ -1654,6 +1656,7 @@ function tryJudge(){
   playSfx('explosion');
   if(r==='win')showWin();
   else if(r==='fail')showFail();
+  updAlive();   // v2.1.0-fix: banner appearing must re-evaluate button state
 }
 
 /* ═══ watchdog ═══ */

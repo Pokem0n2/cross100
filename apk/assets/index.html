@@ -158,12 +158,12 @@ header{width:100%;display:flex;flex-direction:column;gap:8px;padding:10px 0;posi
 @keyframes spop{0%{transform:scale(1)}40%{transform:scale(1.25);color:var(--accent)}100%{transform:scale(1)}}
 
 /* Grid */
-#game{flex:1;display:flex;align-items:center;justify-content:center;width:100%}
+#game{flex:1;display:flex;align-items:center;justify-content:center;width:100%;position:relative}
 #gwrap{
-  position:relative;width:min(92vw,400px);aspect-ratio:1;
+  position:relative;width:min(84vw,360px);aspect-ratio:1;
   border-radius:var(--rad);overflow:hidden;
-  margin-bottom:55px;
-  transform:translateY(-15px);
+  margin-bottom:50px;
+  transform:translateY(-4px);
 }
 #grid{
   width:100%;height:100%;
@@ -223,6 +223,26 @@ header{width:100%;display:flex;flex-direction:column;gap:8px;padding:10px 0;posi
 
 /* Canvas */
 #cv{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:10}
+
+/* v2.0.63-aux: helper row/col minima — no outline, no fill, plain text only */
+#aux{
+  position:absolute;left:0;top:0;right:0;bottom:0;
+  pointer-events:none;user-select:none;-webkit-user-select:none;
+  z-index:20;font-family:'Courier New',Consolas,monospace;font-weight:700;
+}
+#aux .hslot{
+  position:absolute;display:flex;align-items:center;justify-content:center;
+  transform:translate(-50%,-50%);white-space:nowrap;
+}
+#aux .hslot .lbl{font-size:10px;opacity:.75;margin-right:3px}
+#aux .cmin{color:#000}
+#aux .rmin{color:#fff}
+#aux .sum-s{color:#e03131}
+#aux .sum-w{color:#2f9e44}
+[data-theme="pixel"] #aux .cmin{color:#ffd700}
+[data-theme="pixel"] #aux .rmin{color:#fff}
+[data-theme="pixel"] #aux .sum-s{color:#ff6b6b}
+[data-theme="pixel"] #aux .sum-w{color:#51cf66}
 
 /* Overlay */
 .ov{
@@ -375,6 +395,7 @@ footer{display:flex;gap:8px;padding:10px 0;justify-content:space-between;width:1
       <div id="grid"></div>
       <canvas id="cv"></canvas>
     </div>
+    <div id="aux"></div>
     <!-- DEBUG: BGM track view (commented out for release)
     <div id="dbgTracks" style="display:none;padding:12px;overflow-x:auto;width:100%;box-sizing:border-box;flex:1 1 100%">
       <div style="font-size:11px;color:var(--muted);margin-bottom:10px;display:flex;justify-content:space-between;align-items:center">
@@ -794,11 +815,82 @@ function render(){
     $g.appendChild(d);
   }
   resizeCv();
+  updAux();
 }
 function upd(r,c){
   const el=$g.children[r*N+c];
   if(el){el.style.background=cellColor(grid[r][c]);setNum(el,grid[r][c])}
+  updAux();
 }
+
+/* ═══ v2.0.63-aux: helper row/col minima ═══ */
+/* Column minimum = min over cells; any empty cell (v<0) in the line forces 0.
+   A fully empty line has no values → blank slot.
+   Displayed digit = v+1 (gray=1 ... black=9) to match in-cell numbers;
+   "0" from an empty-cell line displays as 0.
+   Layout: top helper row = n column minima + S(sum, rightmost);
+           right helper col = n row minima + W(sum, bottom). */
+function lineMin(cells){
+  let m=Infinity,hasVal=false;
+  for(const v of cells){
+    if(v<0){return -1}              // empty cell present → minimum reads 0
+    if(v<m)m=v;
+    hasVal=true;
+  }
+  return hasVal?m:null;             // all empty → blank
+}
+function colCells(c){const a=[];for(let r=0;r<N;r++)a.push(grid[r][c]);return a}
+function rowCells(r){const a=[];for(let c=0;c<N;c++)a.push(grid[r][c]);return a}
+function auxNumbers(){
+  const cols=[],rows=[];
+  for(let c=0;c<N;c++)cols.push(lineMin(colCells(c)));
+  for(let r=0;r<N;r++)rows.push(lineMin(rowCells(r)));
+  return {cols,rows};
+}
+function updAux(){
+  const $a=$('aux');if(!$a)return;
+  if(!grid.length||!grid[0]||!grid[0].length)return;      // grid not primed yet
+  if(!$g.children.length)return;                           // cells not rendered yet
+  const {cols,rows}=auxNumbers();
+  const disp=v=>v===null?'':(v===-1?'0':String(v+1));   // raw v → displayed digit
+  const sumd=v=>v===null?0:(v===-1?0:v+1);              // summand: empty-line min counts 0
+  const g=$g.getBoundingClientRect();
+  const ar=$a.getBoundingClientRect();
+  const cs=getComputedStyle($g);
+  const pad=parseFloat(cs.paddingTop)||0;
+  const gap=parseFloat(cs.rowGap)||0;
+  let html='';
+  const cells=[];for(let i=0;i<N*N;i++)cells.push($g.children[i]?$g.children[i].getBoundingClientRect():null);
+  // top helper row: column minima aligned above each column; S at far right
+  for(let c=0;c<N;c++){
+    const cr=cells[c];
+    const cx=cr.left-ar.left+cr.width/2;
+    const cy=cr.top-ar.top-cr.height/2;
+    const fs=Math.max(9,Math.round(cr.height*0.45));
+    html+=`<div class="hslot cmin" style="left:${cx}px;top:${cy}px;font-size:${fs}px">${disp(cols[c])}</div>`;
+  }
+  const sSum=cols.reduce((s,v)=>s+sumd(v),0);
+  const lastTop=cells[N-1];
+  const sX=lastTop.right-ar.left+Math.max(10,cr0W(lastTop)*0.5);
+  const sY=lastTop.top-ar.top+lastTop.height/2;
+  const fs2=Math.max(9,Math.round(lastTop.height*0.38));
+  html+=`<div class="hslot sum-s" style="left:${sX}px;top:${sY}px;font-size:${fs2}px"><span class="lbl">S</span>${sSum}</div>`;
+  // right helper col: row minima aligned right of each row; W at bottom
+  for(let r=0;r<N;r++){
+    const cr=cells[r*N+(N-1)];
+    const cx=cr.right-ar.left+Math.max(10,cr0W(cr)*0.5);
+    const cy=cr.top-ar.top+cr.height/2;
+    const fs=Math.max(9,Math.round(cr.height*0.45));
+    html+=`<div class="hslot rmin" style="left:${cx}px;top:${cy}px;font-size:${fs}px">${disp(rows[r])}</div>`;
+  }
+  const wSum=rows.reduce((s,v)=>s+sumd(v),0);
+  const lastRow=cells[N*N-1];
+  const wX=lastRow.right-ar.left+Math.max(10,cr0W(lastRow)*0.5);
+  const wY=lastRow.top-ar.top+lastRow.height/2;
+  html+=`<div class="hslot sum-w" style="left:${wX}px;top:${wY}px;font-size:${fs2}px"><span class="lbl">W</span>${wSum}</div>`;
+  $a.innerHTML=html;
+}
+function cr0W(cr){return Math.max(cr.width,14)}
 
 /* Force-paint every not-yet-painted cell of the current pendingFx.
    The shockwave state machine paints cells only when a beam head reaches
@@ -1259,6 +1351,7 @@ function resizeCv(){
       half:cr.width/2
     });
   }
+  updAux();
 }
 
 function emit(r,c,bdx,bdy){
@@ -1684,6 +1777,7 @@ init();
 window.__t={
   grid:()=>grid, N:()=>N, MAX:()=>MAX, theme:()=>theme,
   numLabel, setNum, numTextColor, cellColor,
+  auxNumbers, lineMin, updAux,
   tap:(r,c)=>tap(r,c), undo
 };
 })();

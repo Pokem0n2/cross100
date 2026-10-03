@@ -492,6 +492,13 @@ const PALETTE=[
 /* ═══ State (current run) ═══ */
 let N=10, MAX=8, TARGET=TARGET_FN(N), currentLevel=10;
 let grid=[],taps=0,busy=false,theme='valley',lang='en',lastGray=0,sol=[],cracking=false,crackStop=false,initGrid=null,tapped=false,undoStack=[],curSeed=0;
+/* v2.1.0-crack: per-cell tap counts + sol need counts, kept in lockstep with
+   undoStack. tappedCount[r][c] = how many times the PLAYER (or crack step) has
+   tapped this cell since game start; pops on undo exactly like undoStack. */
+let tapHist=[];            // stack of {r,c} — parallel to undoStack
+let solNeed=null;          // N*N Int array — required taps per cell from sol
+let gameOver=false;        // win/fail/stuck banner up → controls frozen
+let rngState=null;         // spare; not used currently
 // pendingResult holds 'win' or 'fail' set by tap(); tryJudge() fires the banner
 // only when all animation state arrays are empty (animation fully resolved).
 let pendingResult=null;
@@ -953,9 +960,13 @@ function tap(r,c,fromDemo){
   if(!cracking&&busy)return;
   flushPendingFx(); // v2.0.51: previous tap's visuals must complete before this one starts
   busy=true;
-  if(!cracking){taps++;popSc();if(!tapped){tapped=true;$('bc').classList.add('disabled');}}
+  if(!cracking){taps++;popSc();}
+  /* v2.1.0: old rule "first player tap disables crack" removed — button state
+     is now governed by dead-position detection (updAlive) instead. */
   if(!fromDemo){ // v2.0.55: demo taps must not pollute the undo stack
-    undoStack.push(grid.map(row=>[...row]));$('bu').classList.remove('disabled');
+    undoStack.push(grid.map(row=>[...row]));
+    tapHist.push({r,c});      // v2.1.0: record player/crack taps for dead-check
+    $('bu').classList.remove('disabled');
   }
   playSfx('laser');
   emitSW(r,c);
@@ -1063,6 +1074,7 @@ function popSc(){
   $sc.textContent=taps;
   $sc.classList.remove('pop');void $sc.offsetWidth;$sc.classList.add('pop');
   updRem();
+  updAlive();   // v2.1.0: refresh crack button state after every score update
 }
 function updRem(){
   let rem=0;
@@ -1073,6 +1085,7 @@ function updRem(){
 
 /* ═══ win/fail ═══ */
 function showWin(){
+  gameOver=true;updAlive();   // v2.1.0: game over → crack frozen
   $('ot').textContent=t('winTitle');
   $('oi').textContent='✦';
   $fs.textContent=taps;
@@ -1081,6 +1094,7 @@ function showWin(){
   $ov.classList.remove('hide');
 }
 function showFail(){
+  gameOver=true;updAlive();   // v2.1.0: game over → crack frozen
   $('ot').textContent=t('failTitle');
   $('oi').textContent='✗';
   $fs.textContent=t('failCleared',lastGray);
@@ -1154,61 +1168,78 @@ function universalSolver(g){
   return seq;
 }
 
+/* ═══ v2.1.0: dead-position detection & smart crack ═══ */
+function buildSolNeed(){
+  // Derive per-cell required tap counts from the active solution.
+  solNeed=new Array(N*N).fill(0);
+  if(!sol||!sol.length)return;
+  for(const s of sol)solNeed[s.r*N+s.c]++;
+}
+function tapCountsNow(){
+  // Reconstruct current per-cell tap counts from tapHist (source of truth).
+  const m=new Array(N*N).fill(0);
+  for(const h of tapHist)m[h.r*N+h.c]++;
+  return m;
+}
+function aliveStatus(){
+  // 'win'      — nothing left to tap (game effectively over)
+  // 'alive'    — every tapped cell count ≤ its required count
+  // 'dead'     — some cell over-tapped beyond the solution → unsolvable
+  const need=solNeed||new Array(N*N).fill(0);
+  const have=tapCountsNow();
+  for(let i=0;i<N*N;i++){
+    if(have[i]>need[i]+1e-9)return 'dead';
+  }
+  if(need.every(v=>v===0))return 'no-sol';   // no solution available at all
+  return 'alive';
+}
+function updAlive(){
+  const st=aliveStatus();
+  const bc=$('bc');if(!bc)return;
+  const bannerUp=!$ov.classList.contains('hide')||!!document.getElementById('stuckBanner');
+  if(gameOver||bannerUp||busy||st!=='alive'){
+    bc.classList.add('disabled');
+  }else{
+    bc.classList.remove('disabled');
+  }
+}
+function resetCrackState(){
+  tapHist=[];
+  buildSolNeed();
+  gameOver=false;
+  updAlive();
+}
+
 /* ═══ crack ═══ */
 function crack(){
-  if(busy||(!sol.length&&!grid)||tapped)return;
-  /* if no precomputed solution, run universal solver */
+  /* v2.1.0: single random remaining solution step — a REAL tap: counts toward
+     TAPS, undoable, participates in win/fail judging. Disabled when dead. */
+  if(busy||gameOver)return;
+  if(aliveStatus()!=='alive')return;
+  /* ensure we have a solution: seed games carry one; imported games solve on demand */
   if(!sol.length){
     sol=universalSolver(grid);
-    if(!sol){alert('No solution found for this grid.');return}
+    if(!sol){updAlive();return}
+    buildSolNeed();
   }
-  const savedGrid=grid.map(row=>[...row]);
-  const savedTaps=taps;
-  const bcBtn=$('bc');
-  cracking=true;crackStop=false;
-  busy=true;
-  bcBtn.innerHTML=SVG_PLAY;
-  bcBtn.classList.add('disabled');
-  bcBtn.style.opacity='.6';
-  let i=0;
-  function step(){
-    if(crackStop){cracking=false;busy=false;bcBtn.innerHTML=SVG_X;bcBtn.classList.remove('disabled');bcBtn.style.opacity='1';return;}
-    if(i>=sol.length){
-      setTimeout(()=>{
-        if(crackStop){cracking=false;busy=false;bcBtn.innerHTML=SVG_X;bcBtn.classList.remove('disabled');bcBtn.style.opacity='1';return;}
-        cracking=false;
-        grid=savedGrid;
-        taps=savedTaps;
-        busy=false;
-        bcBtn.innerHTML=SVG_X;
-        bcBtn.classList.remove('disabled');
-        bcBtn.style.opacity='1';
-        popSc();
-        render();
-      },2000);
-      return;
-    }
-    const{r,c}=sol[i];
-    const el=$g.children[r*N+c];
-    if(el){
-      el.classList.add('hint');
-      setTimeout(()=>{
-        if(crackStop){cracking=false;busy=false;bcBtn.innerHTML=SVG_X;bcBtn.classList.remove('disabled');bcBtn.style.opacity='1';return;}
-        el.classList.remove('hint');
-        tap(r,c,true); // internal demo tap bypasses the input lock
-        i++;
-        /* v2.0.53: wait until this move's shockwave fx has fully resolved
-           (all cells painted, busy unlocked) before the next step — keeps the
-           demo correct regardless of frame rate on slow devices. */
-        (function nextStep(){
-          if(crackStop){cracking=false;busy=false;bcBtn.innerHTML=SVG_X;bcBtn.classList.remove('disabled');bcBtn.style.opacity='1';return;}
-          if(busy||pendingFx){setTimeout(nextStep,60);return;}
-          setTimeout(step,250);
-        })();
-      },450);
-    }else{i++;step()}
+  const need=solNeed;
+  const have=tapCountsNow();
+  const pool=[];
+  for(let i=0;i<N*N;i++){
+    const rem=(need[i]||0)-(have[i]||0);
+    for(let k=0;k<rem;k++)pool.push(i);
   }
-  step();
+  if(!pool.length){updAlive();return}
+  const idx=pool[Math.floor(Math.random()*pool.length)];
+  const r=Math.floor(idx/N),c=idx%N;
+  /* brief hint flash, then execute as a REAL tap (fromDemo=false → undoable, scored) */
+  const el=$g.children[r*N+c];
+  if(el){
+    el.classList.add('hint');
+    setTimeout(()=>{el.classList.remove('hint');tap(r,c,false)},450);
+  }else{
+    tap(r,c,false);
+  }
 }
 
 /* ═══ controls ═══ */
@@ -1218,6 +1249,7 @@ function newGame(){
   if(bcBtn){bcBtn.classList.remove('disabled');bcBtn.innerHTML=SVG_X;}
   curSeed=(Math.random()*0xFFFFFFFF)>>>0;
   const r=gen(curSeed);grid=r.grid;sol=r.sol;taps=0;initGrid=grid.map(row=>[...row]);undoStack=[];
+  resetCrackState();   // v2.1.0: AFTER sol is refreshed (needs current sol)
   // Clear all animation state from any previous run
   pendingFx=null;
   shockwaves.length=0;
@@ -1233,6 +1265,7 @@ function restartLevel(){
   if(bcBtn){bcBtn.classList.remove('disabled');bcBtn.innerHTML=SVG_X;}
   if(initGrid){grid=initGrid.map(row=>[...row]);}
   taps=0;undoStack=[];$('bu').classList.add('disabled');
+  resetCrackState();   // v2.1.0: AFTER grid restored (sol unchanged, need rebuilt)
   // Clear all animation state from any previous run
   pendingFx=null;
   shockwaves.length=0;
@@ -1247,10 +1280,10 @@ function undo(){
   // Close overlay if showing
   $ov.classList.add('hide');
   grid=undoStack.pop();
+  tapHist.pop();              // v2.1.0: keep tap record in lockstep with undo
   taps=Math.max(0,taps-1);
   if(!undoStack.length){
     $('bu').classList.add('disabled');
-    tapped=false;$('bc').classList.remove('disabled');
   }
   popSc();render();
 }
@@ -1264,6 +1297,7 @@ function loadSeedFromInput(){
   if(bcBtn){bcBtn.classList.remove('disabled');bcBtn.innerHTML=SVG_X;}
   curSeed=seed>>>0;
   const r=gen(curSeed);grid=r.grid;sol=r.sol;taps=0;initGrid=grid.map(row=>[...row]);undoStack=[];
+  resetCrackState();   // v2.1.0: AFTER sol is refreshed
   // Clear all animation state from any previous run
   pendingFx=null;
   shockwaves.length=0;
@@ -1288,6 +1322,10 @@ function importGrid(){
   const bcBtn=document.getElementById('bc');
   if(bcBtn){bcBtn.classList.remove('disabled');bcBtn.innerHTML=SVG_X;}
   grid=g;sol=[];taps=0;curSeed=0;initGrid=grid.map(row=>[...row]);undoStack=[];
+  /* v2.1.0: imported grid carries no solution — solve immediately so dead
+     detection works; unsolvable import = button disabled (dead). */
+  sol=universalSolver(grid);
+  resetCrackState();   // AFTER sol ready
   $('seedVal').textContent='imported';
   $('bu').classList.add('disabled');
   try{var sb=document.getElementById('stuckBanner');if(sb)sb.remove();}catch(e){}
@@ -1806,9 +1844,10 @@ function init(){
 init();
 /* v2.0.70-numbers: test hooks — expose internals for automated verification */
 window.__t={
-  grid:()=>grid, N:()=>N, MAX:()=>MAX, theme:()=>theme,
+  grid:()=>grid, N:()=>N, MAX:()=>MAX, theme:()=>theme, sol:()=>sol, taps:()=>taps,
   numLabel, setNum, numTextColor, cellColor,
   auxNumbers, lineMin, updAux,
+  aliveStatus, tapCountsNow, resetCrackState, crack, updAlive, gameOver:()=>gameOver,
   tap:(r,c)=>tap(r,c), undo
 };
 })();

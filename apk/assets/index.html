@@ -864,6 +864,11 @@ function updAux(){
   const $a=$('aux');if(!$a)return;
   if(!grid.length||!grid[0]||!grid[0].length)return;      // grid not primed yet
   if(!$g.children.length)return;                           // cells not rendered yet
+  /* v2.1.3: helper digits scale with cell size again (looks better); the board
+     width shrinks per-N so the scaled digits still fit inside the screen. */
+  const vw=Math.min(document.documentElement.clientWidth,window.innerWidth||1e9);
+  const shrink={4:0.68,6:0.78,8:0.82,10:0.84}[N]||0.84;
+  $('gwrap').style.width=`min(${Math.round(shrink*100)}vw,360px)`;
   const {cols,rows}=auxNumbers();
   const disp=v=>v===null?'':(v===-1?'0':String(v+1));   // raw v → displayed digit
   const sumd=v=>v===null?0:(v===-1?0:v+1);              // summand: empty-line min counts 0
@@ -888,7 +893,8 @@ function updAux(){
   // v2.1.2: helper digits use HELL (10x10) sizing on ALL difficulties — fixed
   // font + font-based outward gap, so big-cell boards (4x4/6x6/8x8) no longer
   // push digits off-screen (cell-proportional offsets could exceed the margin).
-  const AUX_FS=14;                          // fixed HELL (10x10) size on all boards
+  // v2.1.3: digits scale with cell size; outward gap scales with the font
+  const AUX_FS=Math.max(14,Math.round(cells[0].height*0.45));
   const AUX_GAP=Math.max(10,Math.round(AUX_FS*1.1));
   // top helper row: column minima aligned above each column
   for(let c=0;c<N;c++){

@@ -238,6 +238,13 @@ header{width:100%;display:flex;flex-direction:column;gap:8px;padding:10px 0;posi
 #aux .rmin{color:#fff}
 #aux .sum-s{color:#e03131}
 #aux .sum-w{color:#2f9e44}
+/* v2.0.70-hl: yellow glow outline for cells with colMin+rowMin−self > 1 */
+#aux .hl{
+  position:absolute;box-sizing:border-box;
+  border:3px solid #ffd700;border-radius:var(--crad);
+  box-shadow:0 0 10px 2px rgba(255,215,0,.55),inset 0 0 8px rgba(255,215,0,.35);
+  pointer-events:none;
+}
 [data-theme="pixel"] #aux .cmin{color:#ffd700}
 [data-theme="pixel"] #aux .rmin{color:#fff}
 [data-theme="pixel"] #aux .sum-s{color:#ff6b6b}
@@ -900,6 +907,18 @@ function updAux(){
   const wX=lastRow.right-ar.left+Math.max(10,cr0W(lastRow)*0.5);
   const wY=lastRow.bottom-ar.top+lastRow.height/2;
   html+=`<div class="hslot sum-w" style="left:${wX}px;top:${wY}px;font-size:${fs2}px">${wSum}</div>`;
+  // v2.0.70-hl: yellow glow outline on cells where colMin + rowMin − self > 1.
+  // Helper values use DISPLAY digits (gray=1 … black=9; line-with-empty reads 0);
+  // self digit is the cell's own display value; removed cells (v<0) are skipped.
+  const cd=v=>v===null?0:(v===-1?0:v+1);      // helper digit, null→0
+  for(let r=0;r<N;r++)for(let c=0;c<N;c++){
+    const v=grid[r][c];
+    if(v<0)continue;
+    if(cd(cols[c])+cd(rows[r])-(v+1)>1){
+      const cr=cells[r*N+c];
+      html+=`<div class="hl" data-i="${r*N+c}" style="left:${cr.left-ar.left}px;top:${cr.top-ar.top}px;width:${cr.width}px;height:${cr.height}px"></div>`;
+    }
+  }
   $a.innerHTML=html;
 }
 function cr0W(cr){return Math.max(cr.width,14)}

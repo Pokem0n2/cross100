@@ -855,11 +855,22 @@ function updAux(){
   const sumd=v=>v===null?0:(v===-1?0:v+1);              // summand: empty-line min counts 0
   const g=$g.getBoundingClientRect();
   const ar=$a.getBoundingClientRect();
-  const cs=getComputedStyle($g);
-  const pad=parseFloat(cs.paddingTop)||0;
-  const gap=parseFloat(cs.rowGap)||0;
+  // v2.0.68-fix: build cell geometry from LAYOUT values (offsetLeft/Top/Width/Height),
+  // which are immune to the running .tap/.pop/.gone scale animations. Reading
+  // getBoundingClientRect() mid-animation positioned helper digits on the inflated
+  // (scaled-out) rects and they never snapped back after the animation ended.
+  const gx=g.left-$g.offsetLeft, gy=g.top-$g.offsetTop;   // #gwrap origin in viewport, at rest
   let html='';
-  const cells=[];for(let i=0;i<N*N;i++)cells.push($g.children[i]?$g.children[i].getBoundingClientRect():null);
+  const cells=[];
+  for(let i=0;i<N*N;i++){
+    const el=$g.children[i];
+    cells.push(el?{
+      left:gx+el.offsetLeft, top:gy+el.offsetTop,
+      width:el.offsetWidth, height:el.offsetHeight,
+      right:gx+el.offsetLeft+el.offsetWidth,
+      bottom:gy+el.offsetTop+el.offsetHeight
+    }:null);
+  }
   // top helper row: column minima aligned above each column
   for(let c=0;c<N;c++){
     const cr=cells[c];

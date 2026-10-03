@@ -234,7 +234,6 @@ header{width:100%;display:flex;flex-direction:column;gap:8px;padding:10px 0;posi
   position:absolute;display:flex;align-items:center;justify-content:center;
   transform:translate(-50%,-50%);white-space:nowrap;
 }
-#aux .hslot .lbl{font-size:10px;opacity:.75;margin-right:3px}
 #aux .cmin{color:#000}
 #aux .rmin{color:#fff}
 #aux .sum-s{color:#e03131}
@@ -861,7 +860,7 @@ function updAux(){
   const gap=parseFloat(cs.rowGap)||0;
   let html='';
   const cells=[];for(let i=0;i<N*N;i++)cells.push($g.children[i]?$g.children[i].getBoundingClientRect():null);
-  // top helper row: column minima aligned above each column; S at far right
+  // top helper row: column minima aligned above each column
   for(let c=0;c<N;c++){
     const cr=cells[c];
     const cx=cr.left-ar.left+cr.width/2;
@@ -869,13 +868,14 @@ function updAux(){
     const fs=Math.max(9,Math.round(cr.height*0.45));
     html+=`<div class="hslot cmin" style="left:${cx}px;top:${cy}px;font-size:${fs}px">${disp(cols[c])}</div>`;
   }
+  const fs2=Math.max(9,Math.round(cells[N-1].height*0.45));
+  // red sum: same row as the black digits, far right — the slot above the topmost white digit
   const sSum=cols.reduce((s,v)=>s+sumd(v),0);
-  const lastTop=cells[N-1];
-  const sX=lastTop.right-ar.left+Math.max(10,cr0W(lastTop)*0.5);
-  const sY=lastTop.top-ar.top+lastTop.height/2;
-  const fs2=Math.max(9,Math.round(lastTop.height*0.38));
-  html+=`<div class="hslot sum-s" style="left:${sX}px;top:${sY}px;font-size:${fs2}px"><span class="lbl">S</span>${sSum}</div>`;
-  // right helper col: row minima aligned right of each row; W at bottom
+  const topRight=cells[N-1];
+  const sX=topRight.right-ar.left+Math.max(10,cr0W(topRight)*0.5);
+  const sY=topRight.top-ar.top-topRight.height/2;
+  html+=`<div class="hslot sum-s" style="left:${sX}px;top:${sY}px;font-size:${fs2}px">${sSum}</div>`;
+  // right helper col: row minima aligned right of each row
   for(let r=0;r<N;r++){
     const cr=cells[r*N+(N-1)];
     const cx=cr.right-ar.left+Math.max(10,cr0W(cr)*0.5);
@@ -883,11 +883,12 @@ function updAux(){
     const fs=Math.max(9,Math.round(cr.height*0.45));
     html+=`<div class="hslot rmin" style="left:${cx}px;top:${cy}px;font-size:${fs}px">${disp(rows[r])}</div>`;
   }
+  // green sum: same column as the white digits, very bottom — the slot below the last white digit
   const wSum=rows.reduce((s,v)=>s+sumd(v),0);
   const lastRow=cells[N*N-1];
   const wX=lastRow.right-ar.left+Math.max(10,cr0W(lastRow)*0.5);
-  const wY=lastRow.top-ar.top+lastRow.height/2;
-  html+=`<div class="hslot sum-w" style="left:${wX}px;top:${wY}px;font-size:${fs2}px"><span class="lbl">W</span>${wSum}</div>`;
+  const wY=lastRow.bottom-ar.top+lastRow.height/2;
+  html+=`<div class="hslot sum-w" style="left:${wX}px;top:${wY}px;font-size:${fs2}px">${wSum}</div>`;
   $a.innerHTML=html;
 }
 function cr0W(cr){return Math.max(cr.width,14)}
